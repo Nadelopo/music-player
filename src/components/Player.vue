@@ -10,36 +10,51 @@ interface Imusics {
   music: HTMLAudioElement
   minutes: number
   seconds: number
+  volume: number
 }
 
-const setDocumentTitle = (name: string) => {
-  document.title = name
+interface IcurrentTime {
+  minutes: number
+  seconds: number
 }
 
-const gsReference = StorerRef(storage, 'gs://music-player-b46c4.appspot.com')
+const setTitlePage = () => {
+  if (activeMusic.value && currentTime.value) {
+    document.title = `${activeMusic.value.name.split('.')[0]} - ${
+      currentTime.value.minutes
+    }:${currentTime.value.seconds}`
+  }
+}
 
 const unSortMusics = ref<Imusics[]>([])
 const musics = computed<Imusics[]>(() =>
   [...unSortMusics.value].sort((a, b) => a.name.localeCompare(b.name))
 )
 const activeMusic = ref<Imusics | null>(null)
+const currentTime = ref<IcurrentTime | null>(null)
+
 onBeforeMount(async () => {
+  const gsReference = StorerRef(storage, 'gs://music-player-b46c4.appspot.com')
   const { items } = await listAll(gsReference)
 
   items.forEach(async (itemRef, index) => {
     const url = await getDownloadURL(StorerRef(storage, itemRef.name))
 
     const audio = new Audio(url)
+
     audio.oncanplay = () => {
       const music = {
         name: itemRef.name,
         music: new Audio(url),
-        minutes: Math.round(audio.duration / 60),
-        seconds: Math.round(audio.duration % 60),
+        minutes: Math.floor(audio.duration / 60),
+        seconds: Math.floor(audio.duration % 60),
+        volume: 1,
       }
       if (!index) {
-        console.log(music)
         activeMusic.value = music
+        const minutes = Math.floor(activeMusic.value.music.currentTime / 60)
+        const seconds = Math.floor(activeMusic.value.music.currentTime % 60)
+        currentTime.value = { minutes, seconds }
       }
       unSortMusics.value.push(music)
     }
@@ -49,11 +64,7 @@ onBeforeMount(async () => {
 watch(
   () => activeMusic.value?.music,
   (cur) => {
-    if (cur) {
-      if (activeMusic.value) {
-        setDocumentTitle(activeMusic.value.name)
-      }
-    }
+    if (cur) setTitlePage()
   }
 )
 
@@ -74,23 +85,67 @@ const setPrevMusic = () => {
     }
   }
 }
+
+const interval = ref(0)
+const play = () => {
+  activeMusic.value?.music.play()
+  interval.value = window.setInterval(() => {
+    if (activeMusic.value) {
+      const minutes = Math.floor(activeMusic.value.music.currentTime / 60)
+      const seconds = Math.floor(activeMusic.value.music.currentTime % 60)
+      currentTime.value = { minutes, seconds }
+      console.log(minutes, seconds)
+      if (
+        activeMusic.value.music.currentTime >= activeMusic.value.music.duration
+      ) {
+        clearInterval(interval.value)
+      }
+      setTitlePage()
+    }
+  }, 1000)
+}
+
+const pause = () => {
+  activeMusic.value?.music.pause()
+  clearInterval(interval.value)
+}
+
+const setVolume = () => {
+  if (activeMusic.value) {
+    activeMusic.value.music.volume = activeMusic.value.volume
+  }
+}
 </script>
 
 <template>
-  <div v-if="activeMusic">
-    <div>{{ activeMusic.minutes }} : {{ activeMusic.seconds }}</div>
+  <div v-if="activeMusic" class="root">
+    <div class="wrapper">
+      <div>{{ currentTime?.minutes }}:{{ currentTime?.seconds }}</div>
+      <div>qwe</div>
+      <div>{{ activeMusic.minutes }} : {{ activeMusic.seconds }}</div>
 
-    <button @click="activeMusic?.music.play()">play</button>
-    <button @click="activeMusic?.music.pause()">pause</button>
-    <button v-if="activeMusic.name !== musics[0].name" @click="setPrevMusic">
-      prev
-    </button>
-    <button
-      v-if="activeMusic.name !== musics[musics.length - 1].name"
-      @click="setNextMusic"
-    >
-      next
-    </button>
+      <button @click="play">play</button>
+      <button @click="pause">pause</button>
+      <button v-if="activeMusic.name !== musics[0].name" @click="setPrevMusic">
+        <PrevSVG />
+      </button>
+      <button
+        v-if="activeMusic.name !== musics[musics.length - 1].name"
+        @click="setNextMusic"
+      >
+        <NextSVG />
+      </button>
+      <div>
+        <input
+          v-model="activeMusic.volume"
+          step="0.01"
+          type="range"
+          max="1"
+          min="0"
+          @input="setVolume"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -104,7 +159,7 @@ const setPrevMusic = () => {
 
 
 .wrapper
-  display: flex
+  // display: flex
   justify-content: center
   align-items: center
   border-radius: 25px
@@ -122,7 +177,7 @@ const setPrevMusic = () => {
   background: none
   outline: none
   border: none
-  display: flex
+  // display: flex
   justify-content: center
   align-items: center
   cursor: pointer
