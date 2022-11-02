@@ -14,7 +14,7 @@ import Player from '@/components/Player.vue'
 <style scoped lang="sass">
 
 .wrapper
-  min-height: Calc(100vh - 20px)
+  min-height: 100vh
   display: flex
   flex-direction: column
 </style>
