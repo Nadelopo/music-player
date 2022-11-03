@@ -1,11 +1,34 @@
+@import "tailwindcss/base"
+@import "tailwindcss/components"
+@import "tailwindcss/utilities"
 
 :root
   --back-main: #1c1c1c
+  --second-clor: #1db954
 
 *
   box-sizing: border-box
   margin: 0
   padding: 0
 
-// body
-  // background: var(--back-main)
+input[type=range]
+  -webkit-appearance: none
+  border-radius: 50px
+  cursor: pointer
+  &:focus
+    outline: none
+
+input[type=range]::-webkit-slider-runnable-track
+  background: #bababa
+  border-radius: 25px
+  height: 5px
+  border-radius: 50px
+
+input[type=range]::-webkit-slider-thumb
+  height: 12px
+  width: 12px
+  border-radius: 50px
+  background: #fff
+  cursor: pointer
+  margin-top: -3.5px
+  -webkit-appearance: none

@@ -4,6 +4,9 @@ import { ref as StorerRef, listAll, getDownloadURL } from 'firebase/storage'
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import PrevSVG from '@/assets/icons/prev.svg?component'
 import NextSVG from '@/assets/icons/next.svg?component'
+import PlaySVG from '@/assets/icons/play.svg?component'
+import PauseSVG from '@/assets/icons/pause.svg?component'
+import VolumeSVG from '@/assets/icons/volume.svg?component'
 
 interface Imusics {
   name: string
@@ -20,9 +23,14 @@ interface IcurrentTime {
   seconds: number
 }
 
+const modifiedSeconds = (seconds: number) =>
+  seconds < 10 ? `0${seconds}` : String(seconds)
+
 const setTitlePage = () => {
   if (activeMusic.value && currentTime.value) {
-    document.title = `${activeMusic.value.name} - ${currentTime.value.minutes}:${currentTime.value.seconds}`
+    document.title = `${activeMusic.value.name} - ${
+      currentTime.value.minutes
+    }:${modifiedSeconds(currentTime.value.seconds)}`
   }
 }
 
@@ -97,6 +105,7 @@ const resetMusicTime = () => {
 }
 
 const setNextMusic = () => {
+  if (isLastMusic.value) return
   resetMusicTime()
   for (let i = 0; i < musics.value.length; i++) {
     if (activeMusic.value && musics.value[i].name === activeMusic.value.name) {
@@ -110,6 +119,10 @@ const setNextMusic = () => {
 
 const setPrevMusic = () => {
   resetMusicTime()
+  if (isFirstMusic.value) {
+    play()
+    return
+  }
   for (let i = 0; i < musics.value.length; i++) {
     if (activeMusic.value && musics.value[i].name === activeMusic.value.name) {
       activeMusic.value = musics.value[i - 1]
@@ -146,6 +159,7 @@ const play = () => {
 const pause = () => {
   activeMusic.value?.music.pause()
   clearInterval(interval.value)
+  interval.value = 0
 }
 
 const setVisibleTime = () => {
@@ -167,9 +181,6 @@ const setCurrentTime = () => {
   }
 }
 
-const modifiedSeconds = (seconds: number) =>
-  seconds < 10 ? `0${seconds}` : String(seconds)
-
 const isLastMusic = computed(() => {
   let value = false
   if (activeMusic.value) {
@@ -186,48 +197,70 @@ const isFirstMusic = computed(() => {
   }
   return value
 })
+
+const allTimeMusic = computed(() => {
+  let time = ''
+  if (activeMusic.value) {
+    time = `${activeMusic.value?.minutes}:${modifiedSeconds(
+      activeMusic.value.seconds
+    )}`
+  }
+  return time
+})
 </script>
 
 <template>
   <div v-if="activeMusic" class="root">
-    <div class="wrapper">
+    <div class="first">
       <div>{{ activeMusic.name }}</div>
-      <div v-if="currentTime">
-        {{ currentTime.minutes }}:{{ modifiedSeconds(currentTime.seconds) }}
-      </div>
-      <div>qwe</div>
+      <div>{{ activeMusic.author }}</div>
+    </div>
+    <div class="second">
       <div>
-        {{ activeMusic.minutes }} : {{ modifiedSeconds(activeMusic.seconds) }}
-      </div>
+        <div class="player__controls">
+          <button @click="setPrevMusic">
+            <PrevSVG />
+          </button>
+          <button v-if="interval" class="player__on-of" @click="pause">
+            <PauseSVG />
+          </button>
+          <button v-else class="player__on-of" @click="play">
+            <PlaySVG />
+          </button>
+          <button @click="setNextMusic">
+            <NextSVG />
+          </button>
+        </div>
+        <div class="flex w-full gap-6">
+          <div v-if="currentTime">
+            {{ currentTime.minutes }}:{{ modifiedSeconds(currentTime.seconds) }}
+          </div>
 
-      <button @click="play">play</button>
-      <button @click="pause">pause</button>
-      <button v-if="isLastMusic" @click="setPrevMusic">
-        <PrevSVG />
-      </button>
-      <button v-if="isFirstMusic" @click="setNextMusic">
-        <NextSVG />
-      </button>
-      <div>
-        <input
-          v-model="activeMusic.time"
-          type="range"
-          min="0"
-          :max="activeMusic.music.duration"
-          @input="setVisibleTime"
-          @click="setCurrentTime"
-        />
+          <div class="w-full flex items-center">
+            <input
+              v-model="activeMusic.time"
+              class="w-full"
+              type="range"
+              min="0"
+              :max="activeMusic.music.duration"
+              @input="setVisibleTime"
+              @click="setCurrentTime"
+            />
+          </div>
+          <div>{{ allTimeMusic }}</div>
+        </div>
       </div>
-      <div>
-        <input
-          v-model="activeMusic.volume"
-          step="0.01"
-          type="range"
-          max="1"
-          min="0"
-          @input="setVolume"
-        />
-      </div>
+    </div>
+    <div class="flex justify-end gap-3 items-center">
+      <VolumeSVG />
+      <input
+        v-model="activeMusic.volume"
+        step="0.01"
+        type="range"
+        max="1"
+        min="0"
+        @input="setVolume"
+      />
     </div>
   </div>
 </template>
@@ -235,38 +268,59 @@ const isFirstMusic = computed(() => {
 <style scoped lang="sass">
 
 .root
-  display: flex
-  justify-content: center
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
   align-items: center
-  background: #f1f3f4
+  background: #181818
+  color: #fff
+  padding: 17px 16px
+  svg
+    fill: #bababa
 
 
-.wrapper
-  // display: flex
-  justify-content: center
-  align-items: center
-  border-radius: 25px
-  background: #f1f3f4
-  width: 40%
-  height: 54px
+.second
+  text-align: center
   audio
     width: 100%
     height: 40px
     &:focus-visible
       outline: none
+  .player__controls
+    display: flex
+    justify-content: center
+    gap: 20px
+    margin-bottom: 10px
+    svg
+      fill: #bababa
+      transition: .1s
+      &:hover
+        fill: #fff
+    .player__on-of
+      display: flex
+      justify-content: center
+      align-items: center
+      width: 32px
+      height: 32px
+      background: #fff
+      border-radius: 50px
+      transition: .2s
+      svg
+        fill: #000
+      &:hover
+        transform: scale(1.05)
 
 
 .player__buttons
   background: none
   outline: none
   border: none
-  // display: flex
   justify-content: center
   align-items: center
   cursor: pointer
   &:focus-visible
     border: 1px solid #000
     border-radius: 10px
+
 
 .left
   margin-right: 6px
