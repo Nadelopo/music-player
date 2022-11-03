@@ -7,6 +7,7 @@ import NextSVG from '@/assets/icons/next.svg?component'
 
 interface Imusics {
   name: string
+  author: string
   music: HTMLAudioElement
   minutes: number
   seconds: number
@@ -54,7 +55,8 @@ onBeforeMount(async () => {
     const audio = new Audio(url)
     audio.oncanplay = () => {
       const music = {
-        name: itemRef.name.split('.')[0],
+        name: itemRef.name.split('-')[0],
+        author: itemRef.name.split('-')[1].split('.')[0],
         music: new Audio(url),
         minutes: Math.floor(audio.duration / 60),
         seconds: Math.floor(audio.duration % 60),
@@ -128,6 +130,7 @@ const play = () => {
           activeMusic.value.music.currentTime
         )
         currentTime.value = { minutes, seconds }
+        activeMusic.value.time++
       }
       if (
         activeMusic.value.music.currentTime >= activeMusic.value.music.duration
@@ -205,7 +208,6 @@ const isFirstMusic = computed(() => {
       <button v-if="isFirstMusic" @click="setNextMusic">
         <NextSVG />
       </button>
-      {{ activeMusic.time }}
       <div>
         <input
           v-model="activeMusic.time"
