@@ -54,6 +54,13 @@ const activeMusic = ref<Imusics | null>(null)
 const currentTime = ref<IcurrentTime | null>(null)
 const isChangeTime = ref(true)
 
+watch(
+  () => activeMusic.value?.music,
+  (cur) => {
+    if (cur) setTitlePage()
+  }
+)
+
 onBeforeMount(async () => {
   const gsReference = StorerRef(storage, 'gs://music-player-b46c4.appspot.com')
   const { items } = await listAll(gsReference)
@@ -85,12 +92,22 @@ onBeforeMount(async () => {
   })
 })
 
-watch(
-  () => activeMusic.value?.music,
-  (cur) => {
-    if (cur) setTitlePage()
+const isLastMusic = computed(() => {
+  let value = false
+  if (activeMusic.value) {
+    value = activeMusic.value.name !== musics.value[0].name
   }
-)
+  return value
+})
+
+const isFirstMusic = computed(() => {
+  let value = false
+  if (activeMusic.value) {
+    value =
+      activeMusic.value.name !== musics.value[musics.value.length - 1].name
+  }
+  return value
+})
 
 const resetMusicTime = () => {
   if (activeMusic.value) {
@@ -181,29 +198,22 @@ const setCurrentTime = () => {
   }
 }
 
-const isLastMusic = computed(() => {
-  let value = false
-  if (activeMusic.value) {
-    value = activeMusic.value.name !== musics.value[0].name
-  }
-  return value
-})
-
-const isFirstMusic = computed(() => {
-  let value = false
-  if (activeMusic.value) {
-    value =
-      activeMusic.value.name !== musics.value[musics.value.length - 1].name
-  }
-  return value
-})
-
 const allTimeMusic = computed(() => {
   let time = ''
   if (activeMusic.value) {
     time = `${activeMusic.value?.minutes}:${modifiedSeconds(
       activeMusic.value.seconds
     )}`
+  }
+  return time
+})
+
+const activeThumb = ref(0)
+let passDuration = computed(() => {
+  let time = ''
+  if (activeMusic.value) {
+    time =
+      (activeMusic.value.time * 100) / activeMusic.value.music.duration + '%'
   }
   return time
 })
@@ -235,14 +245,15 @@ const allTimeMusic = computed(() => {
           <div v-if="currentTime">
             {{ currentTime.minutes }}:{{ modifiedSeconds(currentTime.seconds) }}
           </div>
-
           <div class="w-full flex items-center">
             <input
               v-model="activeMusic.time"
-              class="w-full"
               type="range"
               min="0"
+              class="w-full"
               :max="activeMusic.music.duration"
+              @mouseover="activeThumb = 1"
+              @mouseleave="activeThumb = 0"
               @input="setVisibleTime"
               @click="setCurrentTime"
             />
@@ -328,4 +339,17 @@ const allTimeMusic = computed(() => {
 
 .right
   margin-left: 6px
+
+input[type=range]
+  &::before
+    content: ""
+    width: v-bind(passDuration)
+    height: 5px
+    display: block
+    background: var(--color-second)
+    position: absolute
+    border-radius: 50px
+
+input[type=range]::-webkit-slider-thumb
+  opacity: v-bind(activeThumb)
 </style>

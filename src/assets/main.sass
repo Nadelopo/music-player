@@ -4,7 +4,7 @@
 
 :root
   --back-main: #1c1c1c
-  --second-clor: #1db954
+  --color-second: #1db954
 
 *
   box-sizing: border-box
@@ -15,6 +15,7 @@ input[type=range]
   -webkit-appearance: none
   border-radius: 50px
   cursor: pointer
+  position: relative
   &:focus
     outline: none
 
@@ -32,3 +33,7 @@ input[type=range]::-webkit-slider-thumb
   cursor: pointer
   margin-top: -3.5px
   -webkit-appearance: none
+  transition: .2s
+
+.active
+  display: block
