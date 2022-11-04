@@ -7,6 +7,7 @@ import NextSVG from '@/assets/icons/next.svg?component'
 import PlaySVG from '@/assets/icons/play.svg?component'
 import PauseSVG from '@/assets/icons/pause.svg?component'
 import VolumeSVG from '@/assets/icons/volume.svg?component'
+import Input from './UI/InputRange.vue'
 
 interface Imusics {
   name: string
@@ -208,12 +209,19 @@ const allTimeMusic = computed(() => {
   return time
 })
 
-const activeThumb = ref(0)
 let passDuration = computed(() => {
   let time = ''
   if (activeMusic.value) {
     time =
       (activeMusic.value.time * 100) / activeMusic.value.music.duration + '%'
+  }
+  return time
+})
+
+const passVolume = computed(() => {
+  let time = ''
+  if (activeMusic.value) {
+    time = (activeMusic.value.volume * 100) / 1 + '%'
   }
   return time
 })
@@ -246,16 +254,13 @@ let passDuration = computed(() => {
             {{ currentTime.minutes }}:{{ modifiedSeconds(currentTime.seconds) }}
           </div>
           <div class="w-full flex items-center">
-            <input
+            <Input
               v-model="activeMusic.time"
-              type="range"
-              min="0"
               class="w-full"
               :max="activeMusic.music.duration"
-              @mouseover="activeThumb = 1"
-              @mouseleave="activeThumb = 0"
-              @input="setVisibleTime"
-              @click="setCurrentTime"
+              :on-input="setVisibleTime"
+              :on-click="setCurrentTime"
+              :pass-bar="passDuration"
             />
           </div>
           <div>{{ allTimeMusic }}</div>
@@ -264,13 +269,12 @@ let passDuration = computed(() => {
     </div>
     <div class="flex justify-end gap-3 items-center">
       <VolumeSVG />
-      <input
+      <Input
         v-model="activeMusic.volume"
-        step="0.01"
-        type="range"
-        max="1"
-        min="0"
-        @input="setVolume"
+        :step="0.01"
+        :max="1"
+        :on-input="setVolume"
+        :pass-bar="passVolume"
       />
     </div>
   </div>
@@ -340,16 +344,23 @@ let passDuration = computed(() => {
 .right
   margin-left: 6px
 
-input[type=range]
-  &::before
-    content: ""
-    width: v-bind(passDuration)
-    height: 5px
-    display: block
-    background: var(--color-second)
-    position: absolute
-    border-radius: 50px
 
-input[type=range]::-webkit-slider-thumb
-  opacity: v-bind(activeThumb)
+
+// input[type=range]
+//   &::before
+//     content: ""
+//     height: 5px
+//     display: block
+//     background: var(--color-second)
+//     position: absolute
+//     border-radius: 50px
+
+// .audio
+//   width: 100%
+//   &::before
+//     width: v-bind(passDuration)
+
+// input[type=range]::-webkit-slider-thumb
+//   opacity: v-bind(activeThumb)
+//   position: relative
 </style>
