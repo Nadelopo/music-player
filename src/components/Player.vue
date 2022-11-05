@@ -66,11 +66,22 @@ onBeforeMount(async () => {
   const gsReference = StorerRef(storage, 'gs://music-player-b46c4.appspot.com')
   const { items } = await listAll(gsReference)
 
+  const setMountValues = () => {
+    if (activeMusic.value) {
+      activeMusic.value.music.currentTime = activeMusic.value.time
+      const { minutes, seconds } = getMinutesAndSeconds(
+        activeMusic.value.music.currentTime
+      )
+      currentTime.value = { minutes, seconds }
+    }
+    setVolume()
+  }
+
   items.forEach(async (itemRef, index) => {
     const url = await getDownloadURL(StorerRef(storage, itemRef.name))
     const audio = new Audio(url)
     audio.oncanplay = () => {
-      const music = {
+      const music: Imusics = {
         name: itemRef.name.split('-')[0],
         author: itemRef.name.split('-')[1].split('.')[0],
         music: new Audio(url),
@@ -79,13 +90,16 @@ onBeforeMount(async () => {
         volume: 0.3,
         time: 0,
       }
-      if (!index) {
+
+      if (localStorage.getItem('activeMusic')) {
+        const pars = JSON.parse(localStorage.getItem('activeMusic') || '')
+        activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
+        setMountValues()
+      } else {
         activeMusic.value = music
-        const { minutes, seconds } = getMinutesAndSeconds(
-          activeMusic.value.music.currentTime
-        )
-        currentTime.value = { minutes, seconds }
-        setVolume()
+        if (!index) {
+          setMountValues()
+        }
       }
 
       unSortMusics.value.push(music)
@@ -209,11 +223,24 @@ const allTimeMusic = computed(() => {
   return time
 })
 
+const durationMount = computed(() => {
+  let dur = 0
+  if (activeMusic.value) {
+    dur = activeMusic.value.minutes * 60 + activeMusic.value.seconds
+  }
+  return dur
+})
+
 let passDuration = computed(() => {
   let time = ''
   if (activeMusic.value) {
-    time =
-      (activeMusic.value.time * 100) / activeMusic.value.music.duration + '%'
+    let duration
+    if (isNaN(activeMusic.value.music.duration)) {
+      duration = durationMount.value
+    } else {
+      duration = activeMusic.value.music.duration
+    }
+    time = (activeMusic.value.time * 100) / duration + '%'
   }
   return time
 })
@@ -225,6 +252,22 @@ const passVolume = computed(() => {
   }
   return time
 })
+
+watch(
+  activeMusic,
+  () => {
+    if (activeMusic.value) {
+      localStorage.setItem(
+        'activeMusic',
+        JSON.stringify({
+          ...activeMusic.value,
+          musicSrc: activeMusic.value.music.src,
+        })
+      )
+    }
+  },
+  { deep: true }
+)
 </script>
 //пофиксить поведение инпута при стрелчоках
 <template>
@@ -257,7 +300,7 @@ const passVolume = computed(() => {
             <Input
               v-model="activeMusic.time"
               class="w-full"
-              :max="activeMusic.music.duration"
+              :max="durationMount"
               :on-input="setVisibleTime"
               :on-click="setCurrentTime"
               :pass-bar="passDuration"
