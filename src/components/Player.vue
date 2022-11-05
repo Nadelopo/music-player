@@ -226,7 +226,7 @@ const passVolume = computed(() => {
   return time
 })
 </script>
-
+//пофиксить поведение инпута при стрелчоках
 <template>
   <div v-if="activeMusic" class="root">
     <div class="first">

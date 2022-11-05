@@ -43,6 +43,11 @@ const onInputChildred = () => {
   props.onInput()
 }
 
+const onKey = () => {
+  emits('update:modelValue', inputValue.value + 1)
+  props.onClick()
+}
+
 watch(
   () => props.modelValue,
   (cur) => (inputValue.value = cur)
@@ -56,12 +61,14 @@ const onClickChildren = () => {
 
 <template>
   <input
-    v-model="inputValue"
+    v-model.number="inputValue"
     type="range"
     min="0"
     :step="step"
     :class="classes"
     :max="max"
+    @keyup.up="onKey"
+    @keyup.down="onKey"
     @mouseover="activeThumb = 1"
     @mouseleave="activeThumb = 0"
     @input="onInputChildred"
