@@ -12,12 +12,15 @@ import Input from './UI/InputRange.vue'
 interface Imusics {
   name: string
   author: string
-  music: HTMLAudioElement
+  src: string
   minutes: number
   seconds: number
   volume: number
   time: number
 }
+
+type Modify<T, R> = Omit<T, keyof R> & R
+type IactiveMusic = Modify<Imusics, { music: HTMLAudioElement; src?: string }>
 
 interface IcurrentTime {
   minutes: number
@@ -51,7 +54,7 @@ const unSortMusics = ref<Imusics[]>([])
 const musics = computed<Imusics[]>(() =>
   [...unSortMusics.value].sort((a, b) => a.name.localeCompare(b.name))
 )
-const activeMusic = ref<Imusics | null>(null)
+const activeMusic = ref<IactiveMusic | null>(null)
 const currentTime = ref<IcurrentTime | null>(null)
 const isChangeTime = ref(true)
 
@@ -66,7 +69,7 @@ onBeforeMount(async () => {
   const gsReference = StorerRef(storage, 'gs://music-player-b46c4.appspot.com')
   const { items } = await listAll(gsReference)
 
-  const setMountValues = () => {
+  const setMountedValues = () => {
     if (activeMusic.value) {
       activeMusic.value.music.currentTime = activeMusic.value.time
       const { minutes, seconds } = getMinutesAndSeconds(
@@ -84,7 +87,7 @@ onBeforeMount(async () => {
       const music: Imusics = {
         name: itemRef.name.split('-')[0],
         author: itemRef.name.split('-')[1].split('.')[0],
-        music: new Audio(url),
+        src: url,
         minutes: Math.floor(audio.duration / 60),
         seconds: Math.floor(audio.duration % 60),
         volume: 0.3,
@@ -94,11 +97,11 @@ onBeforeMount(async () => {
       if (localStorage.getItem('activeMusic')) {
         const pars = JSON.parse(localStorage.getItem('activeMusic') || '')
         activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
-        setMountValues()
+        setMountedValues()
       } else {
-        activeMusic.value = music
+        activeMusic.value = { ...music, music: new Audio(music.src) }
         if (!index) {
-          setMountValues()
+          setMountedValues()
         }
       }
 
@@ -124,48 +127,6 @@ const isFirstMusic = computed(() => {
   return value
 })
 
-const resetMusicTime = () => {
-  if (activeMusic.value) {
-    activeMusic.value.music.currentTime = 0
-    activeMusic.value.time = 0
-    const { minutes, seconds } = getMinutesAndSeconds(
-      activeMusic.value.music.currentTime
-    )
-    currentTime.value = { minutes, seconds }
-  }
-  pause()
-}
-
-const setNextMusic = () => {
-  if (isLastMusic.value) return
-  resetMusicTime()
-  for (let i = 0; i < musics.value.length; i++) {
-    if (activeMusic.value && musics.value[i].name === activeMusic.value.name) {
-      activeMusic.value = musics.value[i + 1]
-      break
-    }
-  }
-  play()
-  setVolume()
-}
-
-const setPrevMusic = () => {
-  resetMusicTime()
-  if (isFirstMusic.value) {
-    play()
-    return
-  }
-  for (let i = 0; i < musics.value.length; i++) {
-    if (activeMusic.value && musics.value[i].name === activeMusic.value.name) {
-      activeMusic.value = musics.value[i - 1]
-      break
-    }
-  }
-  play()
-  setVolume()
-}
-
-const interval = ref(0)
 const play = () => {
   activeMusic.value?.music.play()
   interval.value = window.setInterval(() => {
@@ -193,6 +154,55 @@ const pause = () => {
   clearInterval(interval.value)
   interval.value = 0
 }
+
+const resetMusicTime = () => {
+  if (activeMusic.value) {
+    activeMusic.value.music.currentTime = 0
+    activeMusic.value.time = 0
+    const { minutes, seconds } = getMinutesAndSeconds(
+      activeMusic.value.music.currentTime
+    )
+    currentTime.value = { minutes, seconds }
+  }
+  pause()
+}
+
+const setNextMusic = () => {
+  if (isLastMusic.value) return
+  resetMusicTime()
+  for (let i = 0; i < musics.value.length; i++) {
+    if (activeMusic.value && musics.value[i].name === activeMusic.value.name) {
+      activeMusic.value = {
+        ...musics.value[i + 1],
+        music: new Audio(musics.value[i + 1].src),
+      }
+      break
+    }
+  }
+  play()
+  setVolume()
+}
+
+const setPrevMusic = () => {
+  resetMusicTime()
+  if (isFirstMusic.value) {
+    play()
+    return
+  }
+  for (let i = 0; i < musics.value.length; i++) {
+    if (activeMusic.value && musics.value[i].name === activeMusic.value.name) {
+      activeMusic.value = {
+        ...musics.value[i - 1],
+        music: new Audio(musics.value[i - 1].src),
+      }
+      break
+    }
+  }
+  play()
+  setVolume()
+}
+
+const interval = ref(0)
 
 const setVisibleTime = () => {
   if (activeMusic.value) {
@@ -269,7 +279,7 @@ watch(
   { deep: true }
 )
 </script>
-//пофиксить поведение инпута при стрелчоках
+
 <template>
   <div v-if="activeMusic" class="root">
     <div class="first">
@@ -324,7 +334,6 @@ watch(
 </template>
 
 <style scoped lang="sass">
-
 .root
   display: grid
   grid-template-columns: repeat(3, 1fr)
@@ -386,24 +395,4 @@ watch(
 
 .right
   margin-left: 6px
-
-
-
-// input[type=range]
-//   &::before
-//     content: ""
-//     height: 5px
-//     display: block
-//     background: var(--color-second)
-//     position: absolute
-//     border-radius: 50px
-
-// .audio
-//   width: 100%
-//   &::before
-//     width: v-bind(passDuration)
-
-// input[type=range]::-webkit-slider-thumb
-//   opacity: v-bind(activeThumb)
-//   position: relative
 </style>
