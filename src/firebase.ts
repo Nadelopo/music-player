@@ -1,10 +1,13 @@
 import { initializeApp } from 'firebase/app'
+import { getFirestore, collection, getDocs } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+type IMusicData = { author: string; src: string; title: string }
 
-// Your web app's Firebase configuration
+interface Imusic extends IMusicData {
+  id: string
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
   authDomain: 'music-player-b46c4.firebaseapp.com',
@@ -16,5 +19,22 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig)
+export const db = getFirestore(app)
 
 export const storage = getStorage()
+
+export const getMusics = async () => {
+  const querySnapshot = await getDocs(collection(db, 'musics'))
+  const musics: Imusic[] = []
+  querySnapshot.forEach((doc) => {
+    const data = doc.data() as IMusicData
+    const music: Imusic = {
+      title: data.author,
+      author: data.author,
+      src: data.src,
+      id: doc.id,
+    }
+    musics.push(music)
+  })
+  return musics
+}

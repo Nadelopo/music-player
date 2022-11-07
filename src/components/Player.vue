@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { storage } from '@/firebase'
+import { getMusics, storage } from '@/firebase'
 import { ref as StorerRef, listAll, getDownloadURL } from 'firebase/storage'
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import PrevSVG from '@/assets/icons/prev.svg?component'
@@ -55,6 +55,8 @@ onBeforeMount(async () => {
     }
     setVolume()
   }
+
+  console.log(await getMusics())
 
   items.forEach(async (itemRef, index) => {
     const url = await getDownloadURL(StorerRef(storage, itemRef.name))
