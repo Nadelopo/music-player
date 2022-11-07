@@ -19,8 +19,7 @@ interface Imusics {
   time: number
 }
 
-type Modify<T, R> = Omit<T, keyof R> & R
-type IactiveMusic = Modify<Imusics, { music: HTMLAudioElement; src?: string }>
+type IactiveMusic = Omit<Imusics, 'src'> & { music: HTMLAudioElement }
 
 interface IcurrentTime {
   minutes: number
