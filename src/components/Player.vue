@@ -8,26 +8,9 @@ import PlaySVG from '@/assets/icons/play.svg?component'
 import PauseSVG from '@/assets/icons/pause.svg?component'
 import VolumeSVG from '@/assets/icons/volume.svg?component'
 import Input from './UI/InputRange.vue'
-
-interface Imusics {
-  name: string
-  author: string
-  src: string
-  minutes: number
-  seconds: number
-  volume: number
-  time: number
-}
-
-type IactiveMusic = Omit<Imusics, 'src'> & { music: HTMLAudioElement }
-
-interface IcurrentTime {
-  minutes: number
-  seconds: number
-}
-
-const modifiedSeconds = (seconds: number) =>
-  seconds < 10 ? `0${seconds}` : String(seconds)
+import { getMinutesAndSeconds } from '@/utils/getMinutesAndSeconds'
+import { modifiedSeconds } from '@/utils/modifiedSeconds'
+import type { IactiveMusic, IcurrentTime, Imusics } from '@/types/Player'
 
 const setTitlePage = () => {
   if (activeMusic.value && currentTime.value) {
@@ -35,12 +18,6 @@ const setTitlePage = () => {
       currentTime.value.minutes
     }:${modifiedSeconds(currentTime.value.seconds)}`
   }
-}
-
-const getMinutesAndSeconds = (musicTime: number) => {
-  const minutes = Math.floor(musicTime / 60)
-  const seconds = Math.floor(musicTime % 60)
-  return { minutes, seconds }
 }
 
 const setVolume = () => {
@@ -225,9 +202,10 @@ const setCurrentTime = () => {
 const allTimeMusic = computed(() => {
   let time = ''
   if (activeMusic.value) {
-    time = `${activeMusic.value?.minutes}:${modifiedSeconds(
-      activeMusic.value.seconds
-    )}`
+    time = [
+      activeMusic.value?.minutes,
+      modifiedSeconds(activeMusic.value.seconds),
+    ].join(':')
   }
   return time
 })
@@ -343,7 +321,6 @@ watch(
   svg
     fill: #bababa
 
-
 .second
   text-align: center
   audio
@@ -375,7 +352,6 @@ watch(
       &:hover
         transform: scale(1.05)
 
-
 .player__buttons
   background: none
   outline: none
@@ -386,7 +362,6 @@ watch(
   &:focus-visible
     border: 1px solid #000
     border-radius: 10px
-
 
 .left
   margin-right: 6px
