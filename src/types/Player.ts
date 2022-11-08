@@ -1,5 +1,6 @@
 export interface Imusics {
-  name: string
+  id: string
+  title: string
   author: string
   src: string
   minutes: number
@@ -9,8 +10,3 @@ export interface Imusics {
 }
 
 export type IactiveMusic = Omit<Imusics, 'src'> & { music: HTMLAudioElement }
-
-export interface IcurrentTime {
-  minutes: number
-  seconds: number
-}

@@ -2,7 +2,11 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore, collection, getDocs } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
-type IMusicData = { author: string; src: string; title: string }
+interface IMusicData {
+  author: string
+  src: string
+  title: string
+}
 
 interface Imusic extends IMusicData {
   id: string
@@ -23,8 +27,8 @@ export const db = getFirestore(app)
 
 export const storage = getStorage()
 
+const querySnapshot = await getDocs(collection(db, 'musics'))
 export const getMusics = async () => {
-  const querySnapshot = await getDocs(collection(db, 'musics'))
   const musics: Imusic[] = []
   querySnapshot.forEach((doc) => {
     const data = doc.data() as IMusicData

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { getMusics, storage } from '@/firebase'
-import { ref as StorerRef, listAll, getDownloadURL } from 'firebase/storage'
+import { getMusics } from '@/firebase'
 import { computed, onBeforeMount, ref, watch } from 'vue'
 import PrevSVG from '@/assets/icons/prev.svg?component'
 import NextSVG from '@/assets/icons/next.svg?component'
@@ -10,11 +9,16 @@ import VolumeSVG from '@/assets/icons/volume.svg?component'
 import Input from './UI/InputRange.vue'
 import { getMinutesAndSeconds } from '@/utils/getMinutesAndSeconds'
 import { modifiedSeconds } from '@/utils/modifiedSeconds'
-import type { IactiveMusic, IcurrentTime, Imusics } from '@/types/Player'
+import type { Imusics, IactiveMusic } from '@/types/Player'
+
+export interface IcurrentTime {
+  minutes: number
+  seconds: number
+}
 
 const setTitlePage = () => {
   if (activeMusic.value && currentTime.value) {
-    document.title = `${activeMusic.value.name} - ${
+    document.title = `${activeMusic.value.title} - ${
       currentTime.value.minutes
     }:${modifiedSeconds(currentTime.value.seconds)}`
   }
@@ -28,7 +32,7 @@ const setVolume = () => {
 
 const unSortMusics = ref<Imusics[]>([])
 const musics = computed<Imusics[]>(() =>
-  [...unSortMusics.value].sort((a, b) => a.name.localeCompare(b.name))
+  [...unSortMusics.value].sort((a, b) => a.id.localeCompare(b.id))
 )
 const activeMusic = ref<IactiveMusic | null>(null)
 const currentTime = ref<IcurrentTime | null>(null)
@@ -42,9 +46,6 @@ watch(
 )
 
 onBeforeMount(async () => {
-  const gsReference = StorerRef(storage, 'gs://music-player-b46c4.appspot.com')
-  const { items } = await listAll(gsReference)
-
   const setMountedValues = () => {
     if (activeMusic.value) {
       activeMusic.value.music.currentTime = activeMusic.value.time
@@ -56,16 +57,17 @@ onBeforeMount(async () => {
     setVolume()
   }
 
-  console.log(await getMusics())
-
-  items.forEach(async (itemRef, index) => {
-    const url = await getDownloadURL(StorerRef(storage, itemRef.name))
-    const audio = new Audio(url)
+  let items = await getMusics()
+  console.log(items)
+  items.forEach(async (item, index) => {
+    console.log(item)
+    const audio = new Audio(item.src)
     audio.oncanplay = () => {
       const music: Imusics = {
-        name: itemRef.name.split('-')[0],
-        author: itemRef.name.split('-')[1].split('.')[0],
-        src: url,
+        id: item.id,
+        title: item.title,
+        author: item.author,
+        src: item.src,
         minutes: Math.floor(audio.duration / 60),
         seconds: Math.floor(audio.duration % 60),
         volume: 0.3,
@@ -77,12 +79,11 @@ onBeforeMount(async () => {
         activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
         setMountedValues()
       } else {
-        activeMusic.value = { ...music, music: new Audio(music.src) }
+        activeMusic.value = { ...music, music: audio }
         if (!index) {
           setMountedValues()
         }
       }
-
       unSortMusics.value.push(music)
     }
   })
@@ -91,7 +92,7 @@ onBeforeMount(async () => {
 const isLastMusic = computed(() => {
   let value = false
   if (activeMusic.value) {
-    value = activeMusic.value.name !== musics.value[0].name
+    value = activeMusic.value.id !== musics.value[0].id
   }
   return value
 })
@@ -99,8 +100,7 @@ const isLastMusic = computed(() => {
 const isFirstMusic = computed(() => {
   let value = false
   if (activeMusic.value) {
-    value =
-      activeMusic.value.name !== musics.value[musics.value.length - 1].name
+    value = activeMusic.value.id !== musics.value[musics.value.length - 1].id
   }
   return value
 })
@@ -149,7 +149,7 @@ const setNextMusic = () => {
   if (isLastMusic.value) return
   resetMusicTime()
   for (let i = 0; i < musics.value.length; i++) {
-    if (activeMusic.value && musics.value[i].name === activeMusic.value.name) {
+    if (activeMusic.value && musics.value[i].id === activeMusic.value.id) {
       activeMusic.value = {
         ...musics.value[i + 1],
         music: new Audio(musics.value[i + 1].src),
@@ -168,7 +168,7 @@ const setPrevMusic = () => {
     return
   }
   for (let i = 0; i < musics.value.length; i++) {
-    if (activeMusic.value && musics.value[i].name === activeMusic.value.name) {
+    if (activeMusic.value && musics.value[i].id === activeMusic.value.id) {
       activeMusic.value = {
         ...musics.value[i - 1],
         music: new Audio(musics.value[i - 1].src),
@@ -262,7 +262,7 @@ watch(
 <template>
   <div v-if="activeMusic" class="root">
     <div class="first">
-      <div>{{ activeMusic.name }}</div>
+      <div>{{ activeMusic.title }}</div>
       <div>{{ activeMusic.author }}</div>
     </div>
     <div class="second">
