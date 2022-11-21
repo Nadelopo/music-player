@@ -33,7 +33,7 @@ export const getMusics = async () => {
   querySnapshot.forEach((doc) => {
     const data = doc.data() as IMusicData
     const music: Imusic = {
-      title: data.author,
+      title: data.title,
       author: data.author,
       src: data.src,
       id: doc.id,

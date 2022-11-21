@@ -6,6 +6,7 @@ import NextSVG from '@/assets/icons/next.svg?component'
 import PlaySVG from '@/assets/icons/play.svg?component'
 import PauseSVG from '@/assets/icons/pause.svg?component'
 import VolumeSVG from '@/assets/icons/volume.svg?component'
+import ReplaySVG from '@/assets/icons/replay.svg?component'
 import Input from './UI/InputRange.vue'
 import { getMinutesAndSeconds } from '@/utils/getMinutesAndSeconds'
 import { modifiedSeconds } from '@/utils/modifiedSeconds'
@@ -37,6 +38,7 @@ const musics = computed<Imusics[]>(() =>
 const activeMusic = ref<IactiveMusic | null>(null)
 const currentTime = ref<IcurrentTime | null>(null)
 const isChangeTime = ref(true)
+const isReplay = ref(false)
 
 watch(
   () => activeMusic.value?.music,
@@ -58,9 +60,7 @@ onBeforeMount(async () => {
   }
 
   let items = await getMusics()
-  console.log(items)
   items.forEach(async (item, index) => {
-    console.log(item)
     const audio = new Audio(item.src)
     audio.oncanplay = () => {
       const music: Imusics = {
@@ -105,6 +105,18 @@ const isFirstMusic = computed(() => {
   return value
 })
 
+const resetMusicTime = () => {
+  if (activeMusic.value) {
+    activeMusic.value.music.currentTime = 0
+    activeMusic.value.time = 0
+    const { minutes, seconds } = getMinutesAndSeconds(
+      activeMusic.value.music.currentTime
+    )
+    currentTime.value = { minutes, seconds }
+  }
+  pause()
+}
+
 const play = () => {
   activeMusic.value?.music.play()
   interval.value = window.setInterval(() => {
@@ -120,7 +132,12 @@ const play = () => {
         activeMusic.value.music.currentTime >= activeMusic.value.music.duration
       ) {
         clearInterval(interval.value)
-        setNextMusic()
+        if (isReplay.value) {
+          resetMusicTime()
+          play()
+        } else {
+          setNextMusic()
+        }
       }
     }
     setTitlePage()
@@ -131,18 +148,6 @@ const pause = () => {
   activeMusic.value?.music.pause()
   clearInterval(interval.value)
   interval.value = 0
-}
-
-const resetMusicTime = () => {
-  if (activeMusic.value) {
-    activeMusic.value.music.currentTime = 0
-    activeMusic.value.time = 0
-    const { minutes, seconds } = getMinutesAndSeconds(
-      activeMusic.value.music.currentTime
-    )
-    currentTime.value = { minutes, seconds }
-  }
-  pause()
 }
 
 const setNextMusic = () => {
@@ -277,9 +282,14 @@ watch(
           <button v-else class="player__on-of" @click="play">
             <PlaySVG />
           </button>
-          <button @click="setNextMusic">
-            <NextSVG />
-          </button>
+          <div class="flex items-center gap-6">
+            <button @click="setNextMusic">
+              <NextSVG />
+            </button>
+            <button @click="isReplay = !isReplay">
+              <ReplaySVG :class="{ active: isReplay }" class="replay" />
+            </button>
+          </div>
         </div>
         <div class="flex w-full gap-6">
           <div v-if="currentTime">
@@ -340,6 +350,9 @@ watch(
       transition: .1s
       &:hover
         fill: #fff
+    .replay
+      &.active
+        fill: #1db954
     .player__on-of
       display: flex
       justify-content: center
@@ -353,22 +366,4 @@ watch(
         fill: #000
       &:hover
         transform: scale(1.05)
-
-.player__buttons
-  background: none
-  outline: none
-  border: none
-  justify-content: center
-  align-items: center
-  cursor: pointer
-  &:focus-visible
-    border: 1px solid #000
-    border-radius: 10px
-
-.left
-  margin-right: 6px
-  margin-left: 10px
-
-.right
-  margin-left: 6px
 </style>
