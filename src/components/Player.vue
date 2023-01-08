@@ -96,7 +96,7 @@ onBeforeMount(async () => {
 const isLastMusic = computed(() => {
   let value = false
   if (activeMusic) {
-    value = activeMusic.id !== musics.value[0].id
+    value = activeMusic.id === musics.value.at(-1)?.id
   }
   return value
 })
@@ -104,7 +104,7 @@ const isLastMusic = computed(() => {
 const isFirstMusic = computed(() => {
   let value = false
   if (activeMusic) {
-    value = activeMusic.id !== musics.value[musics.value.length - 1].id
+    value = activeMusic.id === musics.value.at(0)?.id
   }
   return value
 })
