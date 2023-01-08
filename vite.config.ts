@@ -5,13 +5,18 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue(), svgLoader()],
+  plugins: [
+    vue({
+      reactivityTransform: true
+    }),
+    svgLoader()
+  ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
   },
   server: {
-    port: 3000,
-  },
+    port: 3000
+  }
 })

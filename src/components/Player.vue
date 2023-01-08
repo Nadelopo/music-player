@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getMusics } from '@/firebase'
-import { computed, onBeforeMount, ref, watch } from 'vue'
+import { computed, onBeforeMount, watch } from 'vue'
+import { $ref } from 'vue/macros'
 import PrevSVG from '@/assets/icons/prev.svg?component'
 import NextSVG from '@/assets/icons/next.svg?component'
 import PlaySVG from '@/assets/icons/play.svg?component'
@@ -16,32 +17,35 @@ export interface IcurrentTime {
   minutes: number
   seconds: number
 }
+// eslint-disable-next-line
+const { log } = console
 
 const setTitlePage = () => {
-  if (activeMusic.value && currentTime.value) {
-    document.title = `${activeMusic.value.title} - ${
-      currentTime.value.minutes
-    }:${modifiedSeconds(currentTime.value.seconds)}`
+  if (activeMusic && currentTime) {
+    document.title = `${activeMusic.title} - ${
+      currentTime.minutes
+    }:${modifiedSeconds(currentTime.seconds)}`
   }
 }
 
 const setVolume = () => {
-  if (activeMusic.value) {
-    activeMusic.value.music.volume = activeMusic.value.volume
+  if (activeMusic) {
+    activeMusic.music.volume = activeMusic.volume
   }
 }
 
-const unSortMusics = ref<Imusics[]>([])
+let unSortMusics = $ref<Imusics[]>([])
 const musics = computed<Imusics[]>(() =>
-  [...unSortMusics.value].sort((a, b) => a.id.localeCompare(b.id))
+  [...unSortMusics].sort((a, b) => a.id.localeCompare(b.id))
 )
-const activeMusic = ref<IactiveMusic | null>(null)
-const currentTime = ref<IcurrentTime | null>(null)
-const isChangeTime = ref(true)
-const isReplay = ref(false)
+let activeMusic = $ref<IactiveMusic | null>(null)
+let currentTime = $ref<IcurrentTime | null>(null)
+let isChangeTime = $ref(true)
+let isReplay = $ref(false)
+let interval = $ref(0)
 
 watch(
-  () => activeMusic.value?.music,
+  () => activeMusic?.music,
   (cur) => {
     if (cur) setTitlePage()
   }
@@ -49,12 +53,12 @@ watch(
 
 onBeforeMount(async () => {
   const setMountedValues = () => {
-    if (activeMusic.value) {
-      activeMusic.value.music.currentTime = activeMusic.value.time
+    if (activeMusic) {
+      activeMusic.music.currentTime = activeMusic.time
       const { minutes, seconds } = getMinutesAndSeconds(
-        activeMusic.value.music.currentTime
+        activeMusic.music.currentTime
       )
-      currentTime.value = { minutes, seconds }
+      currentTime = { minutes, seconds }
     }
     setVolume()
   }
@@ -71,68 +75,66 @@ onBeforeMount(async () => {
         minutes: Math.floor(audio.duration / 60),
         seconds: Math.floor(audio.duration % 60),
         volume: 0.3,
-        time: 0,
+        time: 0
       }
 
       if (localStorage.getItem('activeMusic')) {
         const pars = JSON.parse(localStorage.getItem('activeMusic') || '')
-        activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
+        activeMusic = { ...pars, music: new Audio(pars.musicSrc) }
         setMountedValues()
       } else {
-        activeMusic.value = { ...music, music: audio }
+        activeMusic = { ...music, music: audio }
         if (!index) {
           setMountedValues()
         }
       }
-      unSortMusics.value.push(music)
+      unSortMusics.push(music)
     }
   })
 })
 
 const isLastMusic = computed(() => {
   let value = false
-  if (activeMusic.value) {
-    value = activeMusic.value.id !== musics.value[0].id
+  if (activeMusic) {
+    value = activeMusic.id !== musics.value[0].id
   }
   return value
 })
 
 const isFirstMusic = computed(() => {
   let value = false
-  if (activeMusic.value) {
-    value = activeMusic.value.id !== musics.value[musics.value.length - 1].id
+  if (activeMusic) {
+    value = activeMusic.id !== musics.value[musics.value.length - 1].id
   }
   return value
 })
 
 const resetMusicTime = () => {
-  if (activeMusic.value) {
-    activeMusic.value.music.currentTime = 0
-    activeMusic.value.time = 0
+  if (activeMusic) {
+    activeMusic.music.currentTime = 0
+    activeMusic.time = 0
     const { minutes, seconds } = getMinutesAndSeconds(
-      activeMusic.value.music.currentTime
+      activeMusic.music.currentTime
     )
-    currentTime.value = { minutes, seconds }
+    currentTime = { minutes, seconds }
   }
   pause()
 }
 
 const play = () => {
-  activeMusic.value?.music.play()
-  interval.value = window.setInterval(() => {
-    if (activeMusic.value) {
-      if (isChangeTime.value) {
+  activeMusic?.music.play()
+  interval = window.setInterval(() => {
+    if (activeMusic) {
+      if (isChangeTime) {
         const { minutes, seconds } = getMinutesAndSeconds(
-          activeMusic.value.music.currentTime
+          activeMusic.music.currentTime
         )
-        currentTime.value = { minutes, seconds }
-        activeMusic.value.time++
+        currentTime = { minutes, seconds }
+        activeMusic.time++
       }
-      if (
-        activeMusic.value.music.currentTime >= activeMusic.value.music.duration
-      ) {
-        clearInterval(interval.value)
-        if (isReplay.value) {
+      if (activeMusic.music.currentTime >= activeMusic.music.duration) {
+        clearInterval(interval)
+        if (isReplay) {
           resetMusicTime()
           play()
         } else {
@@ -145,19 +147,19 @@ const play = () => {
 }
 
 const pause = () => {
-  activeMusic.value?.music.pause()
-  clearInterval(interval.value)
-  interval.value = 0
+  activeMusic?.music.pause()
+  clearInterval(interval)
+  interval = 0
 }
 
 const setNextMusic = () => {
   if (isLastMusic.value) return
   resetMusicTime()
   for (let i = 0; i < musics.value.length; i++) {
-    if (activeMusic.value && musics.value[i].id === activeMusic.value.id) {
-      activeMusic.value = {
+    if (activeMusic && musics.value[i].id === activeMusic.id) {
+      activeMusic = {
         ...musics.value[i + 1],
-        music: new Audio(musics.value[i + 1].src),
+        music: new Audio(musics.value[i + 1].src)
       }
       break
     }
@@ -173,10 +175,10 @@ const setPrevMusic = () => {
     return
   }
   for (let i = 0; i < musics.value.length; i++) {
-    if (activeMusic.value && musics.value[i].id === activeMusic.value.id) {
-      activeMusic.value = {
+    if (activeMusic && musics.value[i].id === activeMusic.id) {
+      activeMusic = {
         ...musics.value[i - 1],
-        music: new Audio(musics.value[i - 1].src),
+        music: new Audio(musics.value[i - 1].src)
       }
       break
     }
@@ -185,77 +187,74 @@ const setPrevMusic = () => {
   setVolume()
 }
 
-const interval = ref(0)
-
 const setVisibleTime = () => {
-  if (activeMusic.value) {
-    isChangeTime.value = false
-    const { minutes, seconds } = getMinutesAndSeconds(activeMusic.value.time)
-    currentTime.value = { minutes, seconds }
+  if (activeMusic) {
+    isChangeTime = false
+    const { minutes, seconds } = getMinutesAndSeconds(activeMusic.time)
+    currentTime = { minutes, seconds }
   }
 }
 
 const setCurrentTime = () => {
-  if (activeMusic.value) {
-    isChangeTime.value = true
-    activeMusic.value.music.currentTime = activeMusic.value.time
+  if (activeMusic) {
+    isChangeTime = true
+    activeMusic.music.currentTime = activeMusic.time
     const { minutes, seconds } = getMinutesAndSeconds(
-      activeMusic.value.music.currentTime
+      activeMusic.music.currentTime
     )
-    currentTime.value = { minutes, seconds }
+    currentTime = { minutes, seconds }
   }
 }
 
 const allTimeMusic = computed(() => {
   let time = ''
-  if (activeMusic.value) {
-    time = [
-      activeMusic.value?.minutes,
-      modifiedSeconds(activeMusic.value.seconds),
-    ].join(':')
+  if (activeMusic) {
+    time = [activeMusic?.minutes, modifiedSeconds(activeMusic.seconds)].join(
+      ':'
+    )
   }
   return time
 })
 
 const durationMount = computed(() => {
   let dur = 0
-  if (activeMusic.value) {
-    dur = activeMusic.value.minutes * 60 + activeMusic.value.seconds
+  if (activeMusic) {
+    dur = activeMusic.minutes * 60 + activeMusic.seconds
   }
   return dur
 })
 
 let passDuration = computed(() => {
   let time = ''
-  if (activeMusic.value) {
+  if (activeMusic) {
     let duration
-    if (isNaN(activeMusic.value.music.duration)) {
+    if (isNaN(activeMusic.music.duration)) {
       duration = durationMount.value
     } else {
-      duration = activeMusic.value.music.duration
+      duration = activeMusic.music.duration
     }
-    time = (activeMusic.value.time * 100) / duration + '%'
+    time = (activeMusic.time * 100) / duration + '%'
   }
   return time
 })
 
 const passVolume = computed(() => {
   let time = ''
-  if (activeMusic.value) {
-    time = (activeMusic.value.volume * 100) / 1 + '%'
+  if (activeMusic) {
+    time = (activeMusic.volume * 100) / 1 + '%'
   }
   return time
 })
 
 watch(
-  activeMusic,
+  () => activeMusic,
   () => {
-    if (activeMusic.value) {
+    if (activeMusic) {
       localStorage.setItem(
         'activeMusic',
         JSON.stringify({
-          ...activeMusic.value,
-          musicSrc: activeMusic.value.music.src,
+          ...activeMusic,
+          musicSrc: activeMusic.music.src
         })
       )
     }
