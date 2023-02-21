@@ -18,7 +18,7 @@ const firebaseConfig = {
   projectId: 'music-player-b46c4',
   storageBucket: 'music-player-b46c4.appspot.com',
   messagingSenderId: '680563393229',
-  appId: import.meta.env.VITE_API_ID,
+  appId: import.meta.env.VITE_API_ID
 }
 
 // Initialize Firebase
@@ -27,8 +27,8 @@ export const db = getFirestore(app)
 
 export const storage = getStorage()
 
-const querySnapshot = await getDocs(collection(db, 'musics'))
 export const getMusics = async () => {
+  const querySnapshot = await getDocs(collection(db, 'musics'))
   const musics: Imusic[] = []
   querySnapshot.forEach((doc) => {
     const data = doc.data() as IMusicData
@@ -36,7 +36,7 @@ export const getMusics = async () => {
       title: data.title,
       author: data.author,
       src: data.src,
-      id: doc.id,
+      id: doc.id
     }
     musics.push(music)
   })

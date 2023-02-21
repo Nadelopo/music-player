@@ -1,60 +1,60 @@
 <script setup lang="ts">
-import { ref, watch, type PropType } from 'vue'
+import { watch, type PropType } from 'vue'
+import { $ref } from 'vue/macros'
 
 const emits = defineEmits(['update:modelValue'])
 
 const props = defineProps({
   passBar: {
     type: String,
-    required: true,
+    required: true
   },
   modelValue: {
     type: Number,
-    required: true,
+    required: true
   },
   step: {
     type: Number,
-    default: 1,
+    default: 1
   },
   max: {
     type: Number,
-    required: true,
+    required: true
   },
   classes: {
     type: String,
-    default: '',
+    default: ''
   },
   onInput: {
     type: Function as PropType<() => void>,
-    required: true,
+    required: true
   },
   onClick: {
     type: Function as PropType<() => void>,
-    default: () => null,
-  },
+    default: () => null
+  }
 })
 
-const activeThumb = ref(0)
-
-const inputValue = ref(props.modelValue)
+let activeThumb = $ref(0)
+let inputValue = $ref(props.modelValue)
 
 const onInputChildred = () => {
-  emits('update:modelValue', inputValue.value)
+  emits('update:modelValue', inputValue)
   props.onInput()
 }
 
 const onKey = () => {
-  emits('update:modelValue', inputValue.value + 1)
+  emits('update:modelValue', inputValue + 1)
   props.onClick()
 }
 
 watch(
   () => props.modelValue,
-  (cur) => (inputValue.value = cur)
+  (cur) => (inputValue = cur)
 )
 
 const onClickChildren = () => {
-  emits('update:modelValue', inputValue.value)
+  emits('update:modelValue', inputValue)
   props.onClick()
 }
 </script>
