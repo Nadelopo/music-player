@@ -18,12 +18,23 @@ interface IcurrentTime {
   minutes: number
   seconds: number
 }
+
 addEventListener('keyup', (e) => {
   if (e.key === ' ') {
     if (isMusicOn.value) pause()
     else play()
   }
 })
+
+let unSortMusics = ref<Imusics[]>([])
+const musics = computed<Imusics[]>(() =>
+  [...unSortMusics.value].sort((a, b) => a.id.localeCompare(b.id))
+)
+let activeMusic = ref<IactiveMusic | null>(null)
+let currentTime = ref<IcurrentTime | null>(null)
+let isChangeTime = ref(true)
+let isReplay = ref(false)
+let isMusicOn = ref(0)
 
 const setTitlePage = () => {
   if (activeMusic.value && currentTime.value) {
@@ -38,16 +49,6 @@ const setVolume = () => {
     activeMusic.value.music.volume = activeMusic.value.volume
   }
 }
-
-let unSortMusics = ref<Imusics[]>([])
-const musics = computed<Imusics[]>(() =>
-  [...unSortMusics.value].sort((a, b) => a.id.localeCompare(b.id))
-)
-let activeMusic = ref<IactiveMusic | null>(null)
-let currentTime = ref<IcurrentTime | null>(null)
-let isChangeTime = ref(true)
-let isReplay = ref(false)
-let interval = ref(0)
 
 watch(
   () => activeMusic.value?.music,
@@ -128,7 +129,7 @@ const resetMusicTime = () => {
 
 const play = () => {
   activeMusic.value?.music.play()
-  interval.value = window.setInterval(() => {
+  isMusicOn.value = window.setInterval(() => {
     if (activeMusic.value) {
       if (isChangeTime.value) {
         const { minutes, seconds } = getMinutesAndSeconds(
@@ -140,7 +141,7 @@ const play = () => {
       if (
         activeMusic.value.music.currentTime >= activeMusic.value.music.duration
       ) {
-        clearInterval(interval.value)
+        clearInterval(isMusicOn.value)
         if (isReplay.value) {
           resetMusicTime()
           play()
@@ -155,8 +156,8 @@ const play = () => {
 
 const pause = () => {
   activeMusic.value?.music.pause()
-  clearInterval(interval.value)
-  interval.value = 0
+  clearInterval(isMusicOn.value)
+  isMusicOn.value = 0
 }
 
 const setNextMusic = () => {
@@ -238,11 +239,11 @@ const allTimeMusic = computed(() => {
 })
 
 const durationMount = computed(() => {
-  let dur = 0
+  let duration = 0
   if (activeMusic.value) {
-    dur = activeMusic.value.minutes * 60 + activeMusic.value.seconds
+    duration = activeMusic.value.minutes * 60 + activeMusic.value.seconds
   }
-  return dur
+  return duration
 })
 
 let passDuration = computed(() => {
@@ -295,7 +296,7 @@ watch(
               <PrevSVG />
             </button>
           </div>
-          <div v-if="interval">
+          <div v-if="isMusicOn">
             <button class="player__on-of" @click="pause">
               <PauseSVG />
             </button>
