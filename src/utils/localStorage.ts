@@ -3,5 +3,10 @@ export const localStorageSet = (key: string, value: any) => {
 }
 
 export const localStorageGet = (key: string) => {
-  return JSON.parse(localStorage.getItem(key) || '')
+  const data = localStorage.getItem(key)
+  if (data) {
+    return JSON.parse(data)
+  } else {
+    return null
+  }
 }
