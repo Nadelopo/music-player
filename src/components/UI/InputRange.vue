@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch, type PropType } from 'vue'
-import { $ref } from 'vue/macros'
+import { ref } from 'vue'
 
 const emits = defineEmits(['update:modelValue'])
 
@@ -35,8 +35,8 @@ const props = defineProps({
   }
 })
 
-let activeThumb = $ref(0)
-let inputValue = $ref(props.modelValue)
+let activeThumb = ref(0)
+let inputValue = ref(props.modelValue)
 
 const onInputChildred = () => {
   emits('update:modelValue', inputValue)
@@ -44,13 +44,13 @@ const onInputChildred = () => {
 }
 
 const onKey = () => {
-  emits('update:modelValue', inputValue + 1)
+  emits('update:modelValue', inputValue.value)
   props.onClick()
 }
 
 watch(
   () => props.modelValue,
-  (cur) => (inputValue = cur)
+  (cur) => (inputValue.value = cur)
 )
 
 const onClickChildren = () => {
@@ -69,6 +69,8 @@ const onClickChildren = () => {
     :max="max"
     @keyup.up="onKey"
     @keyup.down="onKey"
+    @keyup.left="onKey"
+    @keyup.right="onKey"
     @mouseover="activeThumb = 1"
     @mouseleave="activeThumb = 0"
     @input="onInputChildred"

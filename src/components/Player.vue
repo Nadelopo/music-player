@@ -3,6 +3,7 @@ import { getMusics } from '@/firebase'
 import { onBeforeMount, watch, ref, computed } from 'vue'
 import { getMinutesAndSeconds } from '@/utils/getMinutesAndSeconds'
 import { modifiedSeconds } from '@/utils/modifiedSeconds'
+import { localStorageGet, localStorageSet } from '@/utils/localStorage'
 import Input from './UI/InputRange.vue'
 import PrevSVG from '@/assets/icons/prev.svg?component'
 import NextSVG from '@/assets/icons/next.svg?component'
@@ -10,6 +11,7 @@ import PlaySVG from '@/assets/icons/play.svg?component'
 import PauseSVG from '@/assets/icons/pause.svg?component'
 import VolumeSVG from '@/assets/icons/volume.svg?component'
 import ReplaySVG from '@/assets/icons/replay.svg?component'
+import VolumeOffSVG from '@/assets/icons/volumeoff.svg?component'
 import type { Imusics, IactiveMusic } from '@/types/Player'
 
 interface IcurrentTime {
@@ -77,8 +79,8 @@ onBeforeMount(async () => {
         time: 0
       }
 
-      if (localStorage.getItem('activeMusic')) {
-        const pars = JSON.parse(localStorage.getItem('activeMusic') || '')
+      if (localStorageGet('activeMusic')) {
+        const pars = localStorageGet('activeMusic')
         activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
         setMountedValues()
       } else {
@@ -207,6 +209,19 @@ const setCurrentTime = () => {
   }
 }
 
+const volumeSwitch = () => {
+  if (activeMusic.value) {
+    if (activeMusic.value.volume) {
+      localStorageSet('prevVolume', activeMusic.value.volume)
+      activeMusic.value.volume = 0
+      activeMusic.value.music.volume = 0
+    } else {
+      activeMusic.value.volume = localStorageGet('prevVolume')
+      activeMusic.value.music.volume = localStorageGet('prevVolume')
+    }
+  }
+}
+
 const allTimeMusic = computed(() => {
   let time = ''
   if (activeMusic.value) {
@@ -252,13 +267,10 @@ watch(
   () => activeMusic,
   () => {
     if (activeMusic.value) {
-      localStorage.setItem(
-        'activeMusic',
-        JSON.stringify({
-          ...activeMusic.value,
-          musicSrc: activeMusic.value.music.src
-        })
-      )
+      localStorageSet('activeMusic', {
+        ...activeMusic.value,
+        musicSrc: activeMusic.value.music.src
+      })
     }
   },
   { deep: true }
@@ -317,7 +329,12 @@ watch(
       </div>
     </div>
     <div class="flex justify-end gap-3 items-center">
-      <VolumeSVG />
+      <VolumeSVG
+        v-if="activeMusic.volume"
+        class="cursor-pointer"
+        @click="volumeSwitch"
+      />
+      <VolumeOffSVG v-else class="cursor-pointer" @click="volumeSwitch" />
       <Input
         v-model="activeMusic.volume"
         :step="0.01"
