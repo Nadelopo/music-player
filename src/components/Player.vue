@@ -18,8 +18,12 @@ interface IcurrentTime {
   minutes: number
   seconds: number
 }
-// eslint-disable-next-line
-const { log } = console
+addEventListener('keyup', (e) => {
+  if (e.key === ' ') {
+    if (isMusicOn.value) pause()
+    else play()
+  }
+})
 
 const setTitlePage = () => {
   if (activeMusic.value && currentTime.value) {
