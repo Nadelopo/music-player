@@ -19,6 +19,11 @@ interface IcurrentTime {
   seconds: number
 }
 
+interface IstorageGetMusic extends Imusics {
+  musicSrc: string
+  music: {}
+}
+
 addEventListener('keyup', (e) => {
   if (e.key === ' ') {
     if (isMusicOn.value) pause()
@@ -58,42 +63,43 @@ watch(
 )
 
 onBeforeMount(async () => {
-  const setMountedValues = () => {
-    if (activeMusic.value) {
-      activeMusic.value.music.currentTime = activeMusic.value.time
-      const { minutes, seconds } = getMinutesAndSeconds(
-        activeMusic.value.music.currentTime
-      )
-      currentTime.value = { minutes, seconds }
+  const newMusic = (item: any, audio: HTMLAudioElement): Imusics => {
+    return {
+      id: item.id,
+      title: item.title,
+      author: item.author,
+      src: item.src,
+      minutes: Math.floor(audio.duration / 60),
+      seconds: Math.floor(audio.duration % 60),
+      volume: 0.3,
+      time: 0
     }
-    setVolume()
   }
 
   let items = await getMusics()
-  items.forEach(async (item, index) => {
+  items.forEach((item, i) => {
     const audio = new Audio(item.src)
     audio.oncanplay = () => {
-      const music: Imusics = {
-        id: item.id,
-        title: item.title,
-        author: item.author,
-        src: item.src,
-        minutes: Math.floor(audio.duration / 60),
-        seconds: Math.floor(audio.duration % 60),
-        volume: 0.3,
-        time: 0
+      const music: Imusics = newMusic(item, audio)
+
+      if (!i) {
+        if (localStorageGet('activeMusic')) {
+          const pars: IstorageGetMusic = localStorageGet('activeMusic')
+          activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
+          console.log(pars)
+          activeMusic.value.music.currentTime = activeMusic.value.time
+          const { minutes, seconds } = getMinutesAndSeconds(
+            activeMusic.value.music.currentTime
+          )
+          currentTime.value = { minutes, seconds }
+          activeMusic.value.music.volume = activeMusic.value.volume
+        } else {
+          activeMusic.value = { ...music, music: audio }
+          currentTime.value = { minutes: 0, seconds: 0 }
+        }
+        console.log(items)
       }
 
-      if (localStorageGet('activeMusic')) {
-        const pars = localStorageGet('activeMusic')
-        activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
-        setMountedValues()
-      } else {
-        activeMusic.value = { ...music, music: audio }
-        if (!index) {
-          setMountedValues()
-        }
-      }
       unSortMusics.value.push(music)
     }
   })
@@ -269,7 +275,7 @@ const passVolume = computed(() => {
 })
 
 watch(
-  () => activeMusic,
+  activeMusic,
   () => {
     if (activeMusic.value) {
       localStorageSet('activeMusic', {
@@ -283,76 +289,80 @@ watch(
 </script>
 
 <template>
-  <div v-if="activeMusic" class="root">
-    <div class="first">
-      <div>{{ activeMusic.title }}</div>
-      <div>{{ activeMusic.author }}</div>
-    </div>
-    <div class="second">
-      <div>
-        <div class="player__controls">
-          <div class="flex justify-end">
-            <button @click="setPrevMusic">
-              <PrevSVG />
-            </button>
+  <div v-if="activeMusic">
+    <div class="player">
+      <div class="first">
+        <div>{{ activeMusic.title }}</div>
+        <div>{{ activeMusic.author }}</div>
+      </div>
+      <div class="second">
+        <div>
+          <div class="player__controls">
+            <div class="flex justify-end">
+              <button @click="setPrevMusic">
+                <PrevSVG />
+              </button>
+            </div>
+            <div v-if="isMusicOn">
+              <button class="player__on-of" @click="pause">
+                <PauseSVG />
+              </button>
+            </div>
+            <div v-else>
+              <button class="player__on-of" @click="play">
+                <PlaySVG />
+              </button>
+            </div>
+            <div class="flex items-center gap-6">
+              <button @click="setNextMusic">
+                <NextSVG />
+              </button>
+              <button @click="isReplay = !isReplay">
+                <ReplaySVG :class="{ active: isReplay }" class="replay" />
+              </button>
+            </div>
           </div>
-          <div v-if="isMusicOn">
-            <button class="player__on-of" @click="pause">
-              <PauseSVG />
-            </button>
+          <div class="player__bar">
+            <div v-if="currentTime">
+              {{ currentTime.minutes }}:{{
+                modifiedSeconds(currentTime.seconds)
+              }}
+            </div>
+            <div class="w-full flex items-center">
+              <Input
+                v-model="activeMusic.time"
+                class="w-full"
+                :max="durationMount"
+                :on-input="setVisibleTime"
+                :on-click="setCurrentTime"
+                :pass-bar="passDuration"
+              />
+            </div>
+            <div>{{ allTimeMusic }}</div>
           </div>
-          <div v-else>
-            <button class="player__on-of" @click="play">
-              <PlaySVG />
-            </button>
-          </div>
-          <div class="flex items-center gap-6">
-            <button @click="setNextMusic">
-              <NextSVG />
-            </button>
-            <button @click="isReplay = !isReplay">
-              <ReplaySVG :class="{ active: isReplay }" class="replay" />
-            </button>
-          </div>
-        </div>
-        <div class="player__bar">
-          <div v-if="currentTime">
-            {{ currentTime.minutes }}:{{ modifiedSeconds(currentTime.seconds) }}
-          </div>
-          <div class="w-full flex items-center">
-            <Input
-              v-model="activeMusic.time"
-              class="w-full"
-              :max="durationMount"
-              :on-input="setVisibleTime"
-              :on-click="setCurrentTime"
-              :pass-bar="passDuration"
-            />
-          </div>
-          <div>{{ allTimeMusic }}</div>
         </div>
       </div>
-    </div>
-    <div class="flex justify-end gap-3 items-center">
-      <VolumeSVG
-        v-if="activeMusic.volume"
-        class="cursor-pointer"
-        @click="volumeSwitch"
-      />
-      <VolumeOffSVG v-else class="cursor-pointer" @click="volumeSwitch" />
-      <Input
-        v-model="activeMusic.volume"
-        :step="0.01"
-        :max="1"
-        :on-input="setVolume"
-        :pass-bar="passVolume"
-      />
+      <div class="flex justify-end gap-3 items-center">
+        <VolumeSVG
+          v-if="activeMusic.volume"
+          class="cursor-pointer"
+          @click="volumeSwitch"
+        />
+        <VolumeOffSVG v-else class="cursor-pointer" @click="volumeSwitch" />
+        <Input
+          v-model="activeMusic.volume"
+          :step="0.01"
+          :max="1"
+          :on-input="setVolume"
+          :pass-bar="passVolume"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="sass">
-.root
+.player
   display: grid
   grid-template-columns: repeat(3, 1fr)
   align-items: center
