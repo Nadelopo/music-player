@@ -103,7 +103,11 @@ export const useMusicStore = defineStore('music', () => {
             activeMusic.value.time = 0
             currentTime.value = { minutes: 0, seconds: 0 }
           } else {
-            setNextMusic()
+            if (activeMusic.value.id === musics.value.at(-1)?.id) {
+              setSelectedMusic(musics.value[0])
+            } else {
+              setNextMusic()
+            }
           }
         }
       }
@@ -144,9 +148,11 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   const setSelectedMusic = (music: Imusics) => {
-    resetMusicTime()
-    activeMusic.value = { ...music, music: new Audio(music.src) }
-    activeMusic.value.music.volume = activeMusic.value.volume
+    if (activeMusic.value?.id !== music.id) {
+      resetMusicTime()
+      activeMusic.value = { ...music, music: new Audio(music.src) }
+      activeMusic.value.music.volume = activeMusic.value.volume
+    }
     play()
   }
 

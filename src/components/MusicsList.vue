@@ -3,13 +3,30 @@ import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMusicStore } from '@/stores/musicStore'
 import { modifiedSeconds } from '@/utils/modifiedSeconds'
-import PlaySVG from '@/assets/icons/play.svg?component'
 import MusicAnimation from '@/components/MusicAnimation.vue'
+import PlaySVG from '@/assets/icons/play.svg?component'
+import PauseSVG from '@/assets/icons/pause.svg?component'
 
 const { musics, activeMusic, isMusicOn } = storeToRefs(useMusicStore())
-const { setSelectedMusic } = useMusicStore()
+const { setSelectedMusic, pause } = useMusicStore()
 
 const activeRow = ref<number | null>(null)
+
+const musicPlay = (i: number) => {
+  return (
+    activeRow.value !== i &&
+    isMusicOn.value &&
+    activeMusic.value?.id === musics.value[i].id
+  )
+}
+
+const musicPlayHover = (i: number) => {
+  return (
+    activeRow.value === i &&
+    isMusicOn.value &&
+    activeMusic.value?.id === musics.value[i].id
+  )
+}
 </script>
 
 <template>
@@ -23,21 +40,34 @@ const activeRow = ref<number | null>(null)
           @mouseover="activeRow = i"
           @mouseleave="activeRow = null"
         >
-          <div class="number">
-            <template v-if="activeRow !== i">
+          <template v-if="musicPlay(i)">
+            <MusicAnimation />
+          </template>
+          <template v-else-if="musicPlayHover(i)">
+            <button @click="pause">
+              <PauseSVG fill="#fff" />
+            </button>
+          </template>
+          <template v-else-if="activeRow !== i">
+            <div
+              class="number"
+              :class="{ active: activeMusic?.id === musics[i].id }"
+            >
               {{ i + 1 }}
-            </template>
-            <template v-else-if="isMusicOn && activeMusic?.id === musics[i].id">
-              <MusicAnimation />
-            </template>
-            <template v-else>
-              <button @click="setSelectedMusic(music)">
-                <PlaySVG fill="#fff" />
-              </button>
-            </template>
-          </div>
+            </div>
+          </template>
+          <template v-else>
+            <button @click="setSelectedMusic(music)">
+              <PlaySVG fill="#fff" />
+            </button>
+          </template>
           <div class="info">
-            <div class="title">{{ music.title }}</div>
+            <div
+              class="title"
+              :class="{ active: activeMusic?.id === musics[i].id }"
+            >
+              {{ music.title }}
+            </div>
             <div class="author">{{ music.author }}</div>
           </div>
           <div class="time">
@@ -66,10 +96,16 @@ const activeRow = ref<number | null>(null)
     background: #383838
   .number
     color: #b3b3b3
+    justify-self: center
+    &.active
+      color: var(--color-second)
   .info
     .author
       font-size: 14px
       color: #b3b3b3
+    .title
+      &.active
+        color: var(--color-second)
   .time
     justify-self: end
 </style>
