@@ -4,8 +4,9 @@ import { storeToRefs } from 'pinia'
 import { useMusicStore } from '@/stores/musicStore'
 import { modifiedSeconds } from '@/utils/modifiedSeconds'
 import PlaySVG from '@/assets/icons/play.svg?component'
+import MusicAnimation from '@/components/MusicAnimation.vue'
 
-const { musics } = storeToRefs(useMusicStore())
+const { musics, activeMusic, isMusicOn } = storeToRefs(useMusicStore())
 const { setSelectedMusic } = useMusicStore()
 
 const activeRow = ref<number | null>(null)
@@ -25,6 +26,9 @@ const activeRow = ref<number | null>(null)
           <div class="number">
             <template v-if="activeRow !== i">
               {{ i + 1 }}
+            </template>
+            <template v-else-if="isMusicOn && activeMusic?.id === musics[i].id">
+              <MusicAnimation />
             </template>
             <template v-else>
               <button @click="setSelectedMusic(music)">

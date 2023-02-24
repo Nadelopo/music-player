@@ -15,14 +15,29 @@
 </template>
 
 <style scoped>
+body {
+  background: black;
+}
+
+.container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+section {
+  width: 100%;
+}
+
 .music-loader {
   position: relative;
-  width: 100%;
-  height: 30px;
+  width: 120px;
+  height: 80px;
 }
 
 .line {
-  width: 2px;
+  width: 10px;
   position: absolute;
   border-radius: 5px;
   bottom: 0;
@@ -35,23 +50,23 @@
 }
 
 .line2 {
-  left: 5px;
-  animation: dance 0.4s 0.2s ease alternate infinite;
+  left: 20px;
+  animation: dance 0.5s 0.2s ease alternate infinite;
 }
 
 .line3 {
-  left: 10px;
-  animation: dance 0.45s 0.4s ease alternate infinite;
+  left: 40px;
+  animation: dance 0.5s 0.4s ease alternate infinite;
 }
 
 .line4 {
-  left: 15px;
+  left: 60px;
   animation: dance 0.5s 0.3s ease alternate infinite;
 }
 
 .line5 {
-  left: 20px;
-  animation: dance 0.6s 0.1s ease alternate infinite;
+  left: 80px;
+  animation: dance 0.5s 0.1s ease alternate infinite;
 }
 
 @keyframes dance {
