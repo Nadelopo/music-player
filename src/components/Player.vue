@@ -2,7 +2,6 @@
 import { watch, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMusicStore } from '@/stores/musicStore'
-import { getMinutesAndSeconds } from '@/utils/getMinutesAndSeconds'
 import { modifiedSeconds } from '@/utils/modifiedSeconds'
 import { localStorageGet, localStorageSet } from '@/utils/localStorage'
 import Input from './UI/InputRange.vue'
@@ -13,10 +12,12 @@ import PauseSVG from '@/assets/icons/pause.svg?component'
 import VolumeSVG from '@/assets/icons/volume.svg?component'
 import ReplaySVG from '@/assets/icons/replay.svg?component'
 import VolumeOffSVG from '@/assets/icons/volumeoff.svg?component'
+import { formatTimer } from '@/utils/formatTImer'
 
-const { activeMusic, currentTime, musics, isMusicOn, isChangeTime, isReplay } =
-  storeToRefs(useMusicStore())
-const { setMusics, play, pause, resetMusicTime, setNextMusic } = useMusicStore()
+const { activeMusic, musics, isMusicOn, isChangeTime, isReplay } = storeToRefs(
+  useMusicStore()
+)
+const { play, pause, resetMusicTime, setNextMusic } = useMusicStore()
 
 addEventListener('keyup', (e) => {
   if (e.key === ' ') {
@@ -30,8 +31,6 @@ const setVolume = () => {
     activeMusic.value.music.volume = activeMusic.value.volume
   }
 }
-
-setMusics()
 
 const isFirstMusic = computed(() => {
   let value = false
@@ -60,8 +59,6 @@ const setPrevMusic = () => {
 const setVisibleTime = () => {
   if (activeMusic.value) {
     isChangeTime.value = true
-    const { minutes, seconds } = getMinutesAndSeconds(activeMusic.value.time)
-    currentTime.value = { minutes, seconds }
   }
 }
 
@@ -69,10 +66,6 @@ const setCurrentTime = () => {
   if (activeMusic.value) {
     isChangeTime.value = false
     activeMusic.value.music.currentTime = activeMusic.value.time
-    const { minutes, seconds } = getMinutesAndSeconds(
-      activeMusic.value.music.currentTime
-    )
-    currentTime.value = { minutes, seconds }
   }
 }
 
@@ -179,10 +172,8 @@ watch(
             </div>
           </div>
           <div class="player__bar">
-            <div v-if="currentTime">
-              {{ currentTime.minutes }}:{{
-                modifiedSeconds(currentTime.seconds)
-              }}
+            <div>
+              {{ formatTimer(activeMusic.time) }}
             </div>
             <div class="w-full flex items-center">
               <Input

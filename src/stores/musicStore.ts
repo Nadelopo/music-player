@@ -39,6 +39,7 @@ export const useMusicStore = defineStore('music', () => {
   const isChangeTime = ref(false)
   const isReplay = ref(false)
 
+  //fix заменить minutes && seconds на duration
   const setMusics = async () => {
     const items = await getMusics()
     items.forEach((item, i) => {
@@ -102,6 +103,7 @@ export const useMusicStore = defineStore('music', () => {
           if (isReplay.value) {
             activeMusic.value.time = 0
             currentTime.value = { minutes: 0, seconds: 0 }
+            play()
           } else {
             if (activeMusic.value.id === musics.value.at(-1)?.id) {
               setSelectedMusic(musics.value[0])
@@ -173,6 +175,8 @@ export const useMusicStore = defineStore('music', () => {
       }
     }
   )
+
+  setMusics()
 
   return {
     unSortMusics,
