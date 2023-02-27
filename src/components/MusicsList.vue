@@ -2,10 +2,10 @@
 import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMusicStore } from '@/stores/musicStore'
-import { modifiedSeconds } from '@/utils/modifiedSeconds'
 import MusicAnimation from '@/components/MusicAnimation.vue'
 import PlaySVG from '@/assets/icons/play.svg?component'
 import PauseSVG from '@/assets/icons/pause.svg?component'
+import { formatTime } from '@/utils/formatTIme'
 
 const { musics, activeMusic, isMusicOn } = storeToRefs(useMusicStore())
 const { setSelectedMusic, pause } = useMusicStore()
@@ -71,7 +71,7 @@ const musicPlayHover = (i: number) => {
             <div class="author">{{ music.author }}</div>
           </div>
           <div class="time">
-            {{ music.minutes }}:{{ modifiedSeconds(music.seconds) }}
+            {{ formatTime(music.duration) }}
           </div>
         </div>
       </div>

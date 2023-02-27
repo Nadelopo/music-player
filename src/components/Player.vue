@@ -2,7 +2,6 @@
 import { watch, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMusicStore } from '@/stores/musicStore'
-import { modifiedSeconds } from '@/utils/modifiedSeconds'
 import { localStorageGet, localStorageSet } from '@/utils/localStorage'
 import Input from './UI/InputRange.vue'
 import PrevSVG from '@/assets/icons/prev.svg?component'
@@ -12,7 +11,7 @@ import PauseSVG from '@/assets/icons/pause.svg?component'
 import VolumeSVG from '@/assets/icons/volume.svg?component'
 import ReplaySVG from '@/assets/icons/replay.svg?component'
 import VolumeOffSVG from '@/assets/icons/volumeoff.svg?component'
-import { formatTimer } from '@/utils/formatTImer'
+import { formatTime } from '@/utils/formatTIme'
 
 const { activeMusic, musics, isMusicOn, isChangeTime, isReplay } = storeToRefs(
   useMusicStore()
@@ -82,34 +81,10 @@ const volumeSwitch = () => {
   }
 }
 
-const allTimeMusic = computed(() => {
-  let time = ''
-  if (activeMusic.value) {
-    time = [
-      activeMusic.value?.minutes,
-      modifiedSeconds(activeMusic.value.seconds)
-    ].join(':')
-  }
-  return time
-})
-
-const durationMount = computed(() => {
-  let duration = 0
-  if (activeMusic.value) {
-    duration = activeMusic.value.minutes * 60 + activeMusic.value.seconds
-  }
-  return duration
-})
-
 let passDuration = computed(() => {
   let time = ''
   if (activeMusic.value) {
-    let duration
-    if (isNaN(activeMusic.value.music.duration)) {
-      duration = durationMount.value
-    } else {
-      duration = activeMusic.value.music.duration
-    }
+    let duration = activeMusic.value.duration
     time = (activeMusic.value.time * 100) / duration + '%'
   }
   return time
@@ -173,19 +148,19 @@ watch(
           </div>
           <div class="player__bar">
             <div>
-              {{ formatTimer(activeMusic.time) }}
+              {{ formatTime(activeMusic.time) }}
             </div>
             <div class="w-full flex items-center">
               <Input
                 v-model="activeMusic.time"
                 class="w-full"
-                :max="durationMount"
+                :max="activeMusic.duration"
                 :on-input="setVisibleTime"
                 :on-click="setCurrentTime"
                 :pass-bar="passDuration"
               />
             </div>
-            <div>{{ allTimeMusic }}</div>
+            <div>{{ formatTime(activeMusic.duration) }}</div>
           </div>
         </div>
       </div>
