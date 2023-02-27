@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { watch, computed } from 'vue'
+import { watch, computed, onBeforeMount } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useMusicStore } from '@/stores/musicStore'
+import {
+  useMusicStore,
+  type Imusics,
+  type IstorageGetMusic
+} from '@/stores/musicStore'
 import { localStorageGet, localStorageSet } from '@/utils/localStorage'
+import { formatTime } from '@/utils/formatTIme'
+import { getMusics } from '@/firebase'
 import Input from './UI/InputRange.vue'
 import PrevSVG from '@/assets/icons/prev.svg?component'
 import NextSVG from '@/assets/icons/next.svg?component'
@@ -11,18 +17,46 @@ import PauseSVG from '@/assets/icons/pause.svg?component'
 import VolumeSVG from '@/assets/icons/volume.svg?component'
 import ReplaySVG from '@/assets/icons/replay.svg?component'
 import VolumeOffSVG from '@/assets/icons/volumeoff.svg?component'
-import { formatTime } from '@/utils/formatTIme'
 
-const { activeMusic, musics, isMusicOn, isChangeTime, isReplay } = storeToRefs(
-  useMusicStore()
-)
-const { play, pause, resetMusicTime, setNextMusic } = useMusicStore()
+const { activeMusic, isMusicOn, isChangeTime, isReplay, unSortMusics } =
+  storeToRefs(useMusicStore())
+const { play, pause, setNextMusic, setPrevMusic } = useMusicStore()
 
 addEventListener('keyup', (e) => {
   if (e.key === ' ') {
     if (isMusicOn.value) pause()
     else play()
   }
+})
+
+onBeforeMount(async () => {
+  const items = await getMusics()
+  items.forEach((item, i) => {
+    const audio = new Audio(item.src)
+    audio.oncanplay = () => {
+      const music: Imusics = {
+        id: item.id,
+        title: item.title,
+        author: item.author,
+        src: item.src,
+        duration: audio.duration,
+        volume: 0.3,
+        time: 0
+      }
+      if (!i) {
+        if (localStorageGet('activeMusic')) {
+          const pars: IstorageGetMusic = localStorageGet('activeMusic')
+          activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
+          activeMusic.value.music.currentTime = activeMusic.value.time
+          activeMusic.value.music.volume = activeMusic.value.volume
+        } else {
+          activeMusic.value = { ...music, music: new Audio(item.src) }
+          activeMusic.value.music.volume = activeMusic.value.volume
+        }
+      }
+      unSortMusics.value.push(music)
+    }
+  })
 })
 
 const setVolume = (value: number) => {
@@ -36,24 +70,6 @@ const setCurrentTime = (value: number) => {
     isChangeTime.value = false
     activeMusic.value.music.currentTime = value
   }
-}
-
-const setPrevMusic = () => {
-  const isFirstMusic = activeMusic.value?.id === musics.value.at(0)?.id
-  if (isFirstMusic) return
-  resetMusicTime()
-  for (let i = 0; i < musics.value.length; i++) {
-    if (activeMusic.value && musics.value[i].id === activeMusic.value.id) {
-      activeMusic.value = {
-        ...musics.value[i - 1],
-        music: new Audio(musics.value[i - 1].src),
-        volume: activeMusic.value.volume
-      }
-      activeMusic.value.music.volume = activeMusic.value.volume
-      break
-    }
-  }
-  play()
 }
 
 const volumeSwitch = () => {

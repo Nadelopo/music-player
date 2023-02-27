@@ -1,9 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { getMusics } from '@/firebase'
-import { localStorageGet } from '@/utils/localStorage'
 
-interface Imusics {
+export interface Imusics {
   id: string
   title: string
   author: string
@@ -15,7 +13,7 @@ interface Imusics {
 
 type IactiveMusic = Omit<Imusics, 'src'> & { music: HTMLAudioElement }
 
-interface IstorageGetMusic extends Imusics {
+export interface IstorageGetMusic extends Imusics {
   musicSrc: string
   music: {}
 }
@@ -29,37 +27,6 @@ export const useMusicStore = defineStore('music', () => {
   const isMusicOn = ref(0)
   const isChangeTime = ref(false)
   const isReplay = ref(false)
-
-  const setMusics = async () => {
-    const items = await getMusics()
-    items.forEach((item, i) => {
-      const audio = new Audio(item.src)
-      audio.oncanplay = () => {
-        const music: Imusics = {
-          id: item.id,
-          title: item.title,
-          author: item.author,
-          src: item.src,
-          duration: audio.duration,
-          volume: 0.3,
-          time: 0
-        }
-        if (!i) {
-          if (localStorageGet('activeMusic')) {
-            const pars: IstorageGetMusic = localStorageGet('activeMusic')
-            activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
-            activeMusic.value.music.currentTime = activeMusic.value.time
-
-            activeMusic.value.music.volume = activeMusic.value.volume
-          } else {
-            activeMusic.value = { ...music, music: new Audio(item.src) }
-            activeMusic.value.music.volume = activeMusic.value.volume
-          }
-        }
-        unSortMusics.value.push(music)
-      }
-    })
-  }
 
   const play = () => {
     activeMusic.value?.music.play()
@@ -102,6 +69,7 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   const setNextMusic = () => {
+    const musicOn = isMusicOn.value
     const isLastMusic = activeMusic.value?.id === musics.value.at(-1)?.id
     if (isLastMusic) return
     resetMusicTime()
@@ -116,24 +84,45 @@ export const useMusicStore = defineStore('music', () => {
         break
       }
     }
-    play()
+
+    if (musicOn) play()
+  }
+
+  const setPrevMusic = () => {
+    const musicOn = isMusicOn.value
+    const isFirstMusic = activeMusic.value?.id === musics.value.at(0)?.id
+    if (isFirstMusic) return
+    resetMusicTime()
+    for (let i = 0; i < musics.value.length; i++) {
+      if (activeMusic.value && musics.value[i].id === activeMusic.value.id) {
+        activeMusic.value = {
+          ...musics.value[i - 1],
+          music: new Audio(musics.value[i - 1].src),
+          volume: activeMusic.value.volume
+        }
+        activeMusic.value.music.volume = activeMusic.value.volume
+        break
+      }
+    }
+    if (musicOn) play()
   }
 
   const setSelectedMusic = (music: Imusics) => {
-    if (activeMusic.value?.id !== music.id) {
+    if (activeMusic.value && activeMusic.value.id !== music.id) {
       resetMusicTime()
-      activeMusic.value = { ...music, music: new Audio(music.src) }
+      activeMusic.value = {
+        ...music,
+        music: new Audio(music.src),
+        volume: activeMusic.value.volume
+      }
       activeMusic.value.music.volume = activeMusic.value.volume
     }
     play()
   }
 
-  setMusics()
-
   return {
-    unSortMusics,
-    setMusics,
     activeMusic,
+    unSortMusics,
     musics,
     play,
     pause,
@@ -141,7 +130,7 @@ export const useMusicStore = defineStore('music', () => {
     isMusicOn,
     isChangeTime,
     isReplay,
-    resetMusicTime,
-    setNextMusic
+    setNextMusic,
+    setPrevMusic
   }
 })
