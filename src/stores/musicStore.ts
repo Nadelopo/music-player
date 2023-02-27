@@ -1,8 +1,7 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getMusics } from '@/firebase'
 import { localStorageGet } from '@/utils/localStorage'
-import { formatTime } from '@/utils/formatTIme'
 
 interface Imusics {
   id: string
@@ -31,7 +30,6 @@ export const useMusicStore = defineStore('music', () => {
   const isChangeTime = ref(false)
   const isReplay = ref(false)
 
-  //fix заменить minutes && seconds на duration
   const setMusics = async () => {
     const items = await getMusics()
     items.forEach((item, i) => {
@@ -63,21 +61,12 @@ export const useMusicStore = defineStore('music', () => {
     })
   }
 
-  //fix
-  const setTitlePage = () => {
-    if (activeMusic.value) {
-      document.title = `${activeMusic.value.title} - ${formatTime(
-        activeMusic.value.time
-      )}`
-    }
-  }
-
   const play = () => {
     activeMusic.value?.music.play()
     isMusicOn.value = window.setInterval(() => {
       if (activeMusic.value) {
         if (!isChangeTime.value) {
-          activeMusic.value.time++
+          activeMusic.value.time = activeMusic.value.music.currentTime
         }
         if (
           activeMusic.value.music.currentTime >=
@@ -96,7 +85,6 @@ export const useMusicStore = defineStore('music', () => {
           }
         }
       }
-      setTitlePage()
     }, 1000)
   }
 
@@ -114,21 +102,21 @@ export const useMusicStore = defineStore('music', () => {
   }
 
   const setNextMusic = () => {
-    if (isLastMusic.value) return
+    const isLastMusic = activeMusic.value?.id === musics.value.at(-1)?.id
+    if (isLastMusic) return
     resetMusicTime()
     for (let i = 0; i < musics.value.length; i++) {
       if (activeMusic.value && musics.value[i].id === activeMusic.value.id) {
         activeMusic.value = {
           ...musics.value[i + 1],
-          music: new Audio(musics.value[i + 1].src)
+          music: new Audio(musics.value[i + 1].src),
+          volume: activeMusic.value.volume
         }
+        activeMusic.value.music.volume = activeMusic.value.volume
         break
       }
     }
     play()
-    if (activeMusic.value) {
-      activeMusic.value.music.volume = activeMusic.value.volume
-    }
   }
 
   const setSelectedMusic = (music: Imusics) => {
@@ -139,24 +127,6 @@ export const useMusicStore = defineStore('music', () => {
     }
     play()
   }
-
-  const isLastMusic = computed(() => {
-    let value = false
-    if (activeMusic.value) {
-      value = activeMusic.value.id === musics.value.at(-1)?.id
-    }
-    return value
-  })
-
-  const onMusicReady = watch(
-    () => activeMusic.value?.music,
-    (cur) => {
-      if (cur) {
-        setTitlePage()
-        onMusicReady()
-      }
-    }
-  )
 
   setMusics()
 

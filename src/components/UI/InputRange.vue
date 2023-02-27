@@ -26,11 +26,11 @@ const props = defineProps({
     default: ''
   },
   onInput: {
-    type: Function as PropType<() => void>,
+    type: Function as PropType<(value: number) => void>,
     required: true
   },
   onClick: {
-    type: Function as PropType<() => void>,
+    type: Function as PropType<(value: number) => void>,
     default: () => null
   }
 })
@@ -40,12 +40,12 @@ let inputValue = ref(props.modelValue)
 
 const onInputChildred = () => {
   emits('update:modelValue', inputValue)
-  props.onInput()
+  props.onInput(inputValue.value)
 }
 
 const onKey = () => {
   emits('update:modelValue', inputValue.value)
-  props.onClick()
+  props.onClick(inputValue.value)
 }
 
 watch(
@@ -55,7 +55,7 @@ watch(
 
 const onClickChildren = () => {
   emits('update:modelValue', inputValue)
-  props.onClick()
+  props.onClick(inputValue.value)
 }
 </script>
 

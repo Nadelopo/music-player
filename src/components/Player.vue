@@ -25,47 +25,35 @@ addEventListener('keyup', (e) => {
   }
 })
 
-const setVolume = () => {
+const setVolume = (value: number) => {
   if (activeMusic.value) {
-    activeMusic.value.music.volume = activeMusic.value.volume
+    activeMusic.value.music.volume = value
   }
 }
 
-const isFirstMusic = computed(() => {
-  let value = false
+const setCurrentTime = (value: number) => {
   if (activeMusic.value) {
-    value = activeMusic.value.id === musics.value.at(0)?.id
+    isChangeTime.value = false
+    activeMusic.value.music.currentTime = value
   }
-  return value
-})
+}
 
 const setPrevMusic = () => {
-  if (isFirstMusic.value) return
+  const isFirstMusic = activeMusic.value?.id === musics.value.at(0)?.id
+  if (isFirstMusic) return
   resetMusicTime()
   for (let i = 0; i < musics.value.length; i++) {
     if (activeMusic.value && musics.value[i].id === activeMusic.value.id) {
       activeMusic.value = {
         ...musics.value[i - 1],
-        music: new Audio(musics.value[i - 1].src)
+        music: new Audio(musics.value[i - 1].src),
+        volume: activeMusic.value.volume
       }
+      activeMusic.value.music.volume = activeMusic.value.volume
       break
     }
   }
   play()
-  setVolume()
-}
-
-const setVisibleTime = () => {
-  if (activeMusic.value) {
-    isChangeTime.value = true
-  }
-}
-
-const setCurrentTime = () => {
-  if (activeMusic.value) {
-    isChangeTime.value = false
-    activeMusic.value.music.currentTime = activeMusic.value.time
-  }
 }
 
 const volumeSwitch = () => {
@@ -84,24 +72,26 @@ const volumeSwitch = () => {
 let passDuration = computed(() => {
   let time = ''
   if (activeMusic.value) {
-    let duration = activeMusic.value.duration
-    time = (activeMusic.value.time * 100) / duration + '%'
+    time = (activeMusic.value.time * 100) / activeMusic.value.duration + '%'
   }
   return time
 })
 
 const passVolume = computed(() => {
-  let time = ''
+  let volume = ''
   if (activeMusic.value) {
-    time = (activeMusic.value.volume * 100) / 1 + '%'
+    volume = activeMusic.value.volume * 100 + '%'
   }
-  return time
+  return volume
 })
 
 watch(
   activeMusic,
   () => {
     if (activeMusic.value) {
+      document.title = `${activeMusic.value.title} - ${formatTime(
+        activeMusic.value.music.currentTime
+      )}`
       localStorageSet('activeMusic', {
         ...activeMusic.value,
         musicSrc: activeMusic.value.music.src
@@ -155,7 +145,7 @@ watch(
                 v-model="activeMusic.time"
                 class="w-full"
                 :max="activeMusic.duration"
-                :on-input="setVisibleTime"
+                :on-input="() => (isChangeTime = true)"
                 :on-click="setCurrentTime"
                 :pass-bar="passDuration"
               />
