@@ -1,39 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { watch, type PropType } from 'vue'
+import { ref, watch } from 'vue'
+
+interface Props {
+  passBar: string
+  modelValue: number
+  step?: number
+  max: number
+  classes?: string
+  onInput: (value: number) => void
+  onClick?: (value: number) => void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  step: 1,
+  classes: '',
+  onClick: () => null
+})
 
 const emits = defineEmits(['update:modelValue'])
-
-const props = defineProps({
-  passBar: {
-    type: String,
-    required: true
-  },
-  modelValue: {
-    type: Number,
-    required: true
-  },
-  step: {
-    type: Number,
-    default: 1
-  },
-  max: {
-    type: Number,
-    required: true
-  },
-  classes: {
-    type: String,
-    default: ''
-  },
-  onInput: {
-    type: Function as PropType<(value: number) => void>,
-    required: true
-  },
-  onClick: {
-    type: Function as PropType<(value: number) => void>,
-    default: () => null
-  }
-})
 
 let activeThumb = ref(0)
 let inputValue = ref(props.modelValue)

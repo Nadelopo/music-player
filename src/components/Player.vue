@@ -82,9 +82,9 @@ const volumeSwitch = () => {
       activeMusic.value.volume = 0
       activeMusic.value.music.volume = 0
     } else {
-      const previousVolume = localStorageGet<number>('prevVolume')
-      activeMusic.value.volume = previousVolume ?? 0.3
-      activeMusic.value.music.volume = previousVolume ?? 0.3
+      const previousVolume = localStorageGet<number>('prevVolume') ?? 0.3
+      activeMusic.value.volume = previousVolume
+      activeMusic.value.music.volume = previousVolume
     }
   }
 }
