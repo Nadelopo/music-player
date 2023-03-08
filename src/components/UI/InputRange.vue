@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { watch, type PropType } from 'vue'
 import { ref } from 'vue'
+import { watch, type PropType } from 'vue'
 
 const emits = defineEmits(['update:modelValue'])
 

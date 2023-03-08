@@ -2,10 +2,11 @@ export const localStorageSet = (key: string, value: any) => {
   localStorage.setItem(key, JSON.stringify(value))
 }
 
-export const localStorageGet = (key: string) => {
+export const localStorageGet = <T>(key: string) => {
   const data = localStorage.getItem(key)
   if (data) {
-    return JSON.parse(data)
+    const parsed: T = JSON.parse(data)
+    return parsed
   } else {
     return null
   }

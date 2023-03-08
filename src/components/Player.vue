@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { watch, computed, onBeforeMount } from 'vue'
 import { storeToRefs } from 'pinia'
-import {
-  useMusicStore,
-  type Imusics,
-  type IstorageGetMusic
-} from '@/stores/musicStore'
+import { useMusicStore, type Music } from '@/stores/musicStore'
 import { localStorageGet, localStorageSet } from '@/utils/localStorage'
 import { formatTime } from '@/utils/formatTIme'
 import { getMusics } from '@/firebase'
@@ -17,6 +13,11 @@ import PauseSVG from '@/assets/icons/pause.svg?component'
 import VolumeSVG from '@/assets/icons/volume.svg?component'
 import ReplaySVG from '@/assets/icons/replay.svg?component'
 import VolumeOffSVG from '@/assets/icons/volumeoff.svg?component'
+
+interface MusicFromStorage extends Music {
+  musicSrc: string
+  music: {}
+}
 
 const { activeMusic, isMusicOn, isChangeTime, isReplay, unSortMusics } =
   storeToRefs(useMusicStore())
@@ -34,7 +35,7 @@ onBeforeMount(async () => {
   items.forEach((item, i) => {
     const audio = new Audio(item.src)
     audio.oncanplay = () => {
-      const music: Imusics = {
+      const music: Music = {
         id: item.id,
         title: item.title,
         author: item.author,
@@ -45,10 +46,12 @@ onBeforeMount(async () => {
       }
       if (!i) {
         if (localStorageGet('activeMusic')) {
-          const pars: IstorageGetMusic = localStorageGet('activeMusic')
-          activeMusic.value = { ...pars, music: new Audio(pars.musicSrc) }
-          activeMusic.value.music.currentTime = activeMusic.value.time
-          activeMusic.value.music.volume = activeMusic.value.volume
+          const parsed = localStorageGet<MusicFromStorage>('activeMusic')
+          if (parsed) {
+            activeMusic.value = { ...parsed, music: new Audio(parsed.musicSrc) }
+            activeMusic.value.music.currentTime = activeMusic.value.time
+            activeMusic.value.music.volume = activeMusic.value.volume
+          }
         } else {
           activeMusic.value = { ...music, music: new Audio(item.src) }
           activeMusic.value.music.volume = activeMusic.value.volume
@@ -79,8 +82,9 @@ const volumeSwitch = () => {
       activeMusic.value.volume = 0
       activeMusic.value.music.volume = 0
     } else {
-      activeMusic.value.volume = localStorageGet('prevVolume')
-      activeMusic.value.music.volume = localStorageGet('prevVolume')
+      const previousVolume = localStorageGet<number>('prevVolume')
+      activeMusic.value.volume = previousVolume ?? 0.3
+      activeMusic.value.music.volume = previousVolume ?? 0.3
     }
   }
 }

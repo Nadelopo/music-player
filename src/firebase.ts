@@ -2,13 +2,13 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore, collection, getDocs } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
-interface IMusicData {
+interface MusicDB {
   author: string
   src: string
   title: string
 }
 
-interface Imusic extends IMusicData {
+interface ModifiedMusic extends MusicDB {
   id: string
 }
 
@@ -29,10 +29,10 @@ export const storage = getStorage()
 
 export const getMusics = async () => {
   const querySnapshot = await getDocs(collection(db, 'musics'))
-  const musics: Imusic[] = []
+  const musics: ModifiedMusic[] = []
   querySnapshot.forEach((doc) => {
-    const data = doc.data() as IMusicData
-    const music: Imusic = {
+    const data = doc.data() as MusicDB
+    const music: ModifiedMusic = {
       title: data.title,
       author: data.author,
       src: data.src,

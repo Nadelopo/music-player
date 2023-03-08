@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-export interface Imusics {
+export interface Music {
   id: string
   title: string
   author: string
@@ -11,17 +11,14 @@ export interface Imusics {
   time: number
 }
 
-type IactiveMusic = Omit<Imusics, 'src'> & { music: HTMLAudioElement }
-
-export interface IstorageGetMusic extends Imusics {
-  musicSrc: string
-  music: {}
+interface ActiveMusic extends Omit<Music, 'src'> {
+  music: HTMLAudioElement
 }
 
 export const useMusicStore = defineStore('music', () => {
-  const unSortMusics = ref<Imusics[]>([])
-  const activeMusic = ref<IactiveMusic | null>(null)
-  const musics = computed<Imusics[]>(() =>
+  const unSortMusics = ref<Music[]>([])
+  const activeMusic = ref<ActiveMusic | null>(null)
+  const musics = computed<Music[]>(() =>
     [...unSortMusics.value].sort((a, b) => a.id.localeCompare(b.id))
   )
   const isMusicOn = ref(0)
@@ -107,7 +104,7 @@ export const useMusicStore = defineStore('music', () => {
     if (musicOn) play()
   }
 
-  const setSelectedMusic = (music: Imusics) => {
+  const setSelectedMusic = (music: Music) => {
     if (activeMusic.value && activeMusic.value.id !== music.id) {
       resetMusicTime()
       activeMusic.value = {
